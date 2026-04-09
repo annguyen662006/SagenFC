@@ -8,11 +8,39 @@ import { useAppStore } from './store';
 import { Leaderboard } from './components/Leaderboard';
 import { DataEntry } from './components/DataEntry';
 import { Players } from './components/Players';
-import { Trophy, PenLine, Users, Menu, Moon, Sun, Monitor, Hexagon } from 'lucide-react';
+import { Menu, Moon, Sun, Monitor } from 'lucide-react';
 import { useTheme } from './components/ThemeProvider';
 import { motion, AnimatePresence } from 'motion/react';
 
 type Tab = 'leaderboard' | 'entry' | 'players';
+
+const IconLeaderboard = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M18 20V10"/>
+    <path d="M12 20V4"/>
+    <path d="M6 20v-4"/>
+  </svg>
+);
+
+const IconMatch = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+    <line x1="16" x2="16" y1="2" y2="6"/>
+    <line x1="8" x2="8" y1="2" y2="6"/>
+    <line x1="3" x2="21" y1="10" y2="10"/>
+    <path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/>
+    <path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/>
+  </svg>
+);
+
+const IconPlayers = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+    <circle cx="9" cy="7" r="4"/>
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+);
 
 export default function App() {
   const { 
@@ -105,9 +133,9 @@ export default function App() {
           <div className={`hidden md:flex flex-col shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'} sticky top-28 h-[calc(100vh-8rem)]`}>
             <nav className="flex flex-col gap-3">
               {[
-                { id: 'leaderboard', icon: Trophy, label: 'Bảng Xếp Hạng' },
-                { id: 'entry', icon: PenLine, label: 'Nhập Dữ Liệu' },
-                { id: 'players', icon: Users, label: 'Tuyển Thủ' }
+                { id: 'leaderboard', icon: IconLeaderboard, label: 'Bảng Xếp Hạng' },
+                { id: 'entry', icon: IconMatch, label: 'Nhập Dữ Liệu' },
+                { id: 'players', icon: IconPlayers, label: 'Tuyển Thủ' }
               ].map((item) => {
                 const isActive = activeTab === item.id;
                 const Icon = item.icon;
@@ -155,9 +183,9 @@ export default function App() {
           {/* Mobile Bottom Navigation */}
           <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-game-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-game-800 flex justify-around p-2 z-50 pb-[env(safe-area-inset-bottom)]">
             {[
-              { id: 'leaderboard', icon: Trophy, label: 'Xếp Hạng' },
-              { id: 'entry', icon: PenLine, label: 'Nhập Liệu' },
-              { id: 'players', icon: Users, label: 'Tuyển Thủ' }
+              { id: 'leaderboard', icon: IconLeaderboard, label: 'Xếp Hạng' },
+              { id: 'entry', icon: IconMatch, label: 'Nhập Liệu' },
+              { id: 'players', icon: IconPlayers, label: 'Tuyển Thủ' }
             ].map((item) => {
               const isActive = activeTab === item.id;
               const Icon = item.icon;
