@@ -335,16 +335,23 @@ function GamingMedal({ rank, avatarUrl }: { rank: 1 | 2 | 3, avatarUrl?: string 
             textShadow: avatarUrl ? 'none' : '1px 1px 0px rgba(255,255,255,0.4), -1px -1px 0px rgba(0,0,0,0.1)'
           }}
         >
-          {avatarUrl && (
+          {avatarUrl ? (
             <>
               <img src={avatarUrl} alt="Avatar" className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
-              <div className="absolute inset-0 bg-black/30"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+              <Star 
+                className={`absolute bottom-2 sm:bottom-3 z-10 ${isFirst ? 'w-6 h-6 sm:w-8 sm:h-8 text-yellow-400' : (rank === 2 ? 'w-5 h-5 sm:w-7 sm:h-7 text-slate-300' : 'w-5 h-5 sm:w-6 sm:h-6 text-amber-500')} drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]`} 
+                fill="currentColor" 
+              />
+            </>
+          ) : (
+            <>
+              <span className={`relative z-10 ${isFirst ? 'text-4xl sm:text-6xl text-yellow-900' : (rank === 2 ? 'text-3xl sm:text-4xl text-gray-800' : 'text-2xl sm:text-3xl text-orange-950')} font-black mb-0.5 sm:mb-1 drop-shadow-sm`}>
+                {rank}
+              </span>
+              <Star className={`relative z-10 ${isFirst ? 'w-4 h-4 sm:w-6 sm:h-6 text-yellow-900' : (rank === 2 ? 'w-3 h-3 sm:w-5 sm:h-5 text-gray-800' : 'w-3 h-3 sm:w-4 sm:h-4 text-orange-950')} opacity-80`} fill="currentColor" />
             </>
           )}
-          <span className={`relative z-10 ${isFirst ? 'text-4xl sm:text-6xl text-yellow-900' : (rank === 2 ? 'text-3xl sm:text-4xl text-gray-800' : 'text-2xl sm:text-3xl text-orange-950')} font-black mb-0.5 sm:mb-1 drop-shadow-sm ${avatarUrl ? '!text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' : ''}`}>
-            {rank}
-          </span>
-          <Star className={`relative z-10 ${isFirst ? 'w-4 h-4 sm:w-6 sm:h-6 text-yellow-900' : (rank === 2 ? 'w-3 h-3 sm:w-5 sm:h-5 text-gray-800' : 'w-3 h-3 sm:w-4 sm:h-4 text-orange-950')} opacity-80 ${avatarUrl ? '!text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' : ''}`} fill="currentColor" />
         </div>
       </motion.div>
     </motion.div>
