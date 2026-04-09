@@ -254,7 +254,7 @@ export function DataEntry({ players, matches, onSave, onUpdate, onDelete }: Data
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                   <button 
                     onClick={() => handleEdit(match)}
                     className="p-2.5 bg-white dark:bg-game-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl shadow-sm transition-colors"

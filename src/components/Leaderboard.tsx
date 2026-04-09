@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Player, MatchRecord } from '../types';
-import { Trophy, Medal, Star, Maximize2, X, RotateCw } from 'lucide-react';
+import { Trophy, Medal, Star, Maximize2, X, RotateCw, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface LeaderboardProps {
@@ -50,6 +50,7 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
   }, [players, matches]);
 
   const top3 = stats.slice(0, 3);
+  const maxNameLength = top3.length > 0 ? Math.max(...top3.map(p => p.name.length)) : 0;
   const rest = stats.slice(3);
 
   return (
@@ -65,9 +66,9 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
       {/* Top 3 Podium */}
       {top3.length > 0 && (
         <div className="flex items-end justify-center gap-2 sm:gap-6 pt-4">
-          {top3[1] && <TopPlayerCard player={top3[1]} rank={2} className="flex-1 max-w-[33%]" />}
-          {top3[0] && <TopPlayerCard player={top3[0]} rank={1} className="flex-1 max-w-[33%]" />}
-          {top3[2] && <TopPlayerCard player={top3[2]} rank={3} className="flex-1 max-w-[33%]" />}
+          {top3[1] && <TopPlayerCard player={top3[1]} rank={2} maxNameLength={maxNameLength} className="flex-1 max-w-[33%]" />}
+          {top3[0] && <TopPlayerCard player={top3[0]} rank={1} maxNameLength={maxNameLength} className="flex-1 max-w-[33%]" />}
+          {top3[2] && <TopPlayerCard player={top3[2]} rank={3} maxNameLength={maxNameLength} className="flex-1 max-w-[33%]" />}
         </div>
       )}
 
@@ -192,21 +193,59 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
                     </tr>
                   </thead>
                   <tbody className="text-xs divide-y divide-slate-100 dark:divide-game-800/50">
-                    {stats.map((row, index) => (
-                      <tr key={row.id} className="even:bg-slate-50/50 odd:bg-white dark:even:bg-game-800/30 dark:odd:bg-game-900 hover:bg-slate-100 dark:hover:bg-game-800/80 transition-colors group">
-                        <td className="p-2 text-center font-display font-bold text-slate-400 dark:text-slate-500">{index + 1}</td>
-                        <td className="p-2">
-                          <div className="font-bold text-slate-800 dark:text-slate-100 truncate max-w-[120px]">{row.name}</div>
-                          <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5">{row.position}</div>
-                        </td>
-                        <td className="p-2 text-center font-mono font-medium dark:text-slate-300">{row.goals}</td>
-                        <td className="p-2 text-center font-mono font-medium dark:text-slate-300">{row.assists}</td>
-                        <td className="p-2 text-center font-mono font-medium dark:text-slate-300">{row.saves}</td>
-                        <td className="p-2 text-center font-mono font-medium text-slate-500 dark:text-slate-400">{row.points.toLocaleString('vi-VN')}</td>
-                        <td className="p-2 text-center font-mono font-medium dark:text-slate-300">{row.attendance}</td>
-                        <td className="p-2 text-center font-mono font-bold text-sm text-pitch-600 dark:text-neon-cyan">{row.totalPoints.toLocaleString('vi-VN')}</td>
-                      </tr>
-                    ))}
+                    {stats.map((row, index) => {
+                      const rank = index + 1;
+                      const isTop1 = rank === 1;
+                      const isTop2 = rank === 2;
+                      const isTop3 = rank === 3;
+
+                      let rowClass = "transition-colors group ";
+                      if (isTop1) rowClass += "bg-gradient-to-r from-yellow-500/20 via-yellow-400/5 to-transparent dark:from-yellow-500/30 dark:via-yellow-400/10";
+                      else if (isTop2) rowClass += "bg-gradient-to-r from-slate-400/20 via-slate-300/5 to-transparent dark:from-slate-400/30 dark:via-slate-300/10";
+                      else if (isTop3) rowClass += "bg-gradient-to-r from-amber-600/20 via-amber-500/5 to-transparent dark:from-amber-600/30 dark:via-amber-500/10";
+                      else rowClass += "even:bg-slate-50/50 odd:bg-white dark:even:bg-game-800/30 dark:odd:bg-game-900 hover:bg-slate-100 dark:hover:bg-game-800/80";
+
+                      return (
+                        <tr key={row.id} className={rowClass}>
+                          <td className={`p-2 text-center font-display font-bold ${isTop1 ? 'border-l-4 border-yellow-500' : isTop2 ? 'border-l-4 border-slate-400' : isTop3 ? 'border-l-4 border-amber-600' : 'border-l-4 border-transparent'}`}>
+                            {isTop1 ? (
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 text-yellow-950 flex items-center justify-center mx-auto shadow-[0_0_10px_rgba(250,204,21,0.5)] relative">
+                                1
+                                <motion.div animate={{ scale: [0, 1, 0], rotate: [0, 90, 180], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 2 }} className="absolute -top-1 -left-1 w-2 h-2 bg-white" style={{ clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
+                                <motion.div animate={{ scale: [0, 1, 0], rotate: [0, 90, 180], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 2, delay: 1 }} className="absolute -bottom-1 -right-1 w-2 h-2 bg-yellow-100" style={{ clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
+                              </div>
+                            ) : isTop2 ? (
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800 flex items-center justify-center mx-auto shadow-[0_0_10px_rgba(148,163,184,0.5)]">2</div>
+                            ) : isTop3 ? (
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 text-amber-950 flex items-center justify-center mx-auto shadow-[0_0_10px_rgba(217,119,6,0.5)]">3</div>
+                            ) : (
+                              <span className="text-slate-400 dark:text-slate-500">{rank}</span>
+                            )}
+                          </td>
+                          <td className="p-2">
+                            <div className="flex items-center gap-2">
+                              {row.avatar_url ? (
+                                <img src={row.avatar_url} alt={row.name} className={`w-8 h-8 rounded-full object-cover shrink-0 ${isTop1 ? 'border-2 border-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]' : isTop2 ? 'border-2 border-slate-300 shadow-[0_0_8px_rgba(148,163,184,0.6)]' : isTop3 ? 'border-2 border-amber-500 shadow-[0_0_8px_rgba(217,119,6,0.6)]' : 'border border-slate-200 dark:border-game-700'}`} referrerPolicy="no-referrer" />
+                              ) : (
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isTop1 ? 'bg-yellow-100 dark:bg-yellow-900/50 border-2 border-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]' : isTop2 ? 'bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 shadow-[0_0_8px_rgba(148,163,184,0.6)]' : isTop3 ? 'bg-amber-100 dark:bg-amber-900/50 border-2 border-amber-500 shadow-[0_0_8px_rgba(217,119,6,0.6)]' : 'bg-slate-200 dark:bg-game-800 border border-slate-300 dark:border-game-700'}`}>
+                                  <Users size={14} className={isTop1 ? 'text-yellow-600 dark:text-yellow-400' : isTop2 ? 'text-slate-500 dark:text-slate-400' : isTop3 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'} />
+                                </div>
+                              )}
+                              <div>
+                                <div className={`font-bold truncate max-w-[120px] ${isTop1 ? 'text-yellow-700 dark:text-yellow-400' : isTop2 ? 'text-slate-700 dark:text-slate-300' : isTop3 ? 'text-amber-700 dark:text-amber-500' : 'text-slate-800 dark:text-slate-100'}`}>{row.name}</div>
+                                <div className={`text-[9px] mt-0.5 ${isTop1 ? 'text-yellow-600/80 dark:text-yellow-400/80' : isTop2 ? 'text-slate-500 dark:text-slate-400' : isTop3 ? 'text-amber-600/80 dark:text-amber-500/80' : 'text-slate-500 dark:text-slate-400'}`}>{row.position}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className={`p-2 text-center font-mono font-medium ${isTop1 ? 'text-yellow-800 dark:text-yellow-200' : isTop2 ? 'text-slate-800 dark:text-slate-200' : isTop3 ? 'text-amber-900 dark:text-amber-200' : 'dark:text-slate-300'}`}>{row.goals}</td>
+                          <td className={`p-2 text-center font-mono font-medium ${isTop1 ? 'text-yellow-800 dark:text-yellow-200' : isTop2 ? 'text-slate-800 dark:text-slate-200' : isTop3 ? 'text-amber-900 dark:text-amber-200' : 'dark:text-slate-300'}`}>{row.assists}</td>
+                          <td className={`p-2 text-center font-mono font-medium ${isTop1 ? 'text-yellow-800 dark:text-yellow-200' : isTop2 ? 'text-slate-800 dark:text-slate-200' : isTop3 ? 'text-amber-900 dark:text-amber-200' : 'dark:text-slate-300'}`}>{row.saves}</td>
+                          <td className={`p-2 text-center font-mono font-medium ${isTop1 ? 'text-yellow-700 dark:text-yellow-500' : isTop2 ? 'text-slate-600 dark:text-slate-400' : isTop3 ? 'text-amber-700 dark:text-amber-500' : 'text-slate-500 dark:text-slate-400'}`}>{row.points.toLocaleString('vi-VN')}</td>
+                          <td className={`p-2 text-center font-mono font-medium ${isTop1 ? 'text-yellow-800 dark:text-yellow-200' : isTop2 ? 'text-slate-800 dark:text-slate-200' : isTop3 ? 'text-amber-900 dark:text-amber-200' : 'dark:text-slate-300'}`}>{row.attendance}</td>
+                          <td className={`p-2 text-center font-mono font-bold text-sm ${isTop1 ? 'text-yellow-600 dark:text-yellow-400 drop-shadow-sm' : isTop2 ? 'text-slate-600 dark:text-slate-300 drop-shadow-sm' : isTop3 ? 'text-amber-600 dark:text-amber-500 drop-shadow-sm' : 'text-pitch-600 dark:text-neon-cyan'}`}>{row.totalPoints.toLocaleString('vi-VN')}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -227,7 +266,7 @@ function Badge({ label, value, color }: { label: string, value: string, color: s
   );
 }
 
-function GamingMedal({ rank }: { rank: 1 | 2 | 3 }) {
+function GamingMedal({ rank, avatarUrl }: { rank: 1 | 2 | 3, avatarUrl?: string }) {
   const isFirst = rank === 1;
   const colors = {
     1: { 
@@ -288,25 +327,31 @@ function GamingMedal({ rank }: { rank: 1 | 2 | 3 }) {
       >
         {/* Inner Content */}
         <div 
-          className="w-[76%] h-[76%] rounded-full flex flex-col items-center justify-center"
+          className="w-[76%] h-[76%] rounded-full flex flex-col items-center justify-center relative overflow-hidden"
           style={{
             border: '2px dashed rgba(0,0,0,0.15)',
             transform: 'translateZ(12px)',
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%)',
-            textShadow: '1px 1px 0px rgba(255,255,255,0.4), -1px -1px 0px rgba(0,0,0,0.1)'
+            background: avatarUrl ? 'transparent' : 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%)',
+            textShadow: avatarUrl ? 'none' : '1px 1px 0px rgba(255,255,255,0.4), -1px -1px 0px rgba(0,0,0,0.1)'
           }}
         >
-          <span className={`${isFirst ? 'text-4xl sm:text-6xl text-yellow-900' : (rank === 2 ? 'text-3xl sm:text-4xl text-gray-800' : 'text-2xl sm:text-3xl text-orange-950')} font-black mb-0.5 sm:mb-1 drop-shadow-sm`}>
+          {avatarUrl && (
+            <>
+              <img src={avatarUrl} alt="Avatar" className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black/30"></div>
+            </>
+          )}
+          <span className={`relative z-10 ${isFirst ? 'text-4xl sm:text-6xl text-yellow-900' : (rank === 2 ? 'text-3xl sm:text-4xl text-gray-800' : 'text-2xl sm:text-3xl text-orange-950')} font-black mb-0.5 sm:mb-1 drop-shadow-sm ${avatarUrl ? '!text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' : ''}`}>
             {rank}
           </span>
-          <Star className={`${isFirst ? 'w-4 h-4 sm:w-6 sm:h-6 text-yellow-900' : (rank === 2 ? 'w-3 h-3 sm:w-5 sm:h-5 text-gray-800' : 'w-3 h-3 sm:w-4 sm:h-4 text-orange-950')} opacity-80`} fill="currentColor" />
+          <Star className={`relative z-10 ${isFirst ? 'w-4 h-4 sm:w-6 sm:h-6 text-yellow-900' : (rank === 2 ? 'w-3 h-3 sm:w-5 sm:h-5 text-gray-800' : 'w-3 h-3 sm:w-4 sm:h-4 text-orange-950')} opacity-80 ${avatarUrl ? '!text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' : ''}`} fill="currentColor" />
         </div>
       </motion.div>
     </motion.div>
   );
 }
 
-function TopPlayerCard({ player, rank, className = '' }: { player: any, rank: number, className?: string }) {
+function TopPlayerCard({ player, rank, maxNameLength = 10, className = '' }: { player: any, rank: number, maxNameLength?: number, className?: string }) {
   const isFirst = rank === 1;
   
   const rankStyles = {
@@ -321,6 +366,15 @@ function TopPlayerCard({ player, rank, className = '' }: { player: any, rank: nu
     3: 'text-amber-700 dark:text-amber-500'
   };
 
+  let nameSizeClass = "text-xs sm:text-xl md:text-2xl";
+  if (maxNameLength >= 20) {
+    nameSizeClass = "text-[8px] sm:text-sm md:text-base";
+  } else if (maxNameLength >= 15) {
+    nameSizeClass = "text-[9px] sm:text-base md:text-lg";
+  } else if (maxNameLength >= 11) {
+    nameSizeClass = "text-[10px] sm:text-lg md:text-xl";
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 50 }}
@@ -332,12 +386,14 @@ function TopPlayerCard({ player, rank, className = '' }: { player: any, rank: nu
       <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none"></div>
       
       <div className="p-3 sm:p-6 flex flex-col items-center text-center relative z-10">
-        <GamingMedal rank={rank as 1|2|3} />
+        <GamingMedal rank={rank as 1|2|3} avatarUrl={player.avatar_url} />
         
-        <h3 className="text-sm sm:text-2xl font-display font-black text-slate-800 dark:text-white uppercase tracking-wide truncate w-full px-1 drop-shadow-sm mt-2">
-          {player.name}
-        </h3>
-        <div className="text-[9px] sm:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 sm:mb-6 bg-slate-100 dark:bg-game-800 px-2 py-1 rounded-md mt-1">
+        <div className="h-8 sm:h-14 flex items-center justify-center w-full mt-2 mb-1">
+          <h3 className={`${nameSizeClass} font-display font-black text-slate-800 dark:text-white uppercase tracking-wide w-full px-1 drop-shadow-sm leading-tight line-clamp-2`}>
+            {player.name}
+          </h3>
+        </div>
+        <div className="text-[9px] sm:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 sm:mb-6 bg-slate-100 dark:bg-game-800 px-2 py-1 rounded-md">
           {player.position}
         </div>
 
