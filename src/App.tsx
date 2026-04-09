@@ -115,21 +115,23 @@ export default function App() {
                   <button 
                     key={item.id}
                     onClick={() => setActiveTab(item.id as Tab)}
-                    className={`relative flex items-center gap-4 px-4 py-3.5 rounded-xl font-display font-bold tracking-wide uppercase transition-all duration-300 overflow-hidden group ${
+                    className={`relative flex items-center gap-4 px-4 py-3.5 rounded-xl font-display font-bold tracking-wide uppercase transition-all duration-300 group ${
                       isActive 
-                        ? 'text-white bg-slate-900 dark:bg-game-800 border border-slate-800 dark:border-neon-cyan/50 dark:box-glow-cyan' 
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-game-800 border border-transparent'
+                        ? 'text-white bg-gradient-to-r from-slate-800 to-slate-900 dark:from-game-800 dark:to-game-900 translate-y-[2px] shadow-[inset_0_3px_6px_rgba(0,0,0,0.4)] border border-slate-700 dark:border-game-700' 
+                        : 'text-slate-500 dark:text-slate-400 bg-white dark:bg-game-900 border-b-4 border-slate-200 dark:border-game-800 hover:border-pitch-400 dark:hover:border-neon-cyan hover:-translate-y-1 hover:shadow-lg hover:text-pitch-600 dark:hover:text-neon-cyan'
                     }`}
                   >
                     {isActive && (
                       <motion.div 
                         layoutId="activeTabDesktop"
-                        className="absolute inset-0 bg-gradient-to-r from-pitch-500/20 to-transparent dark:from-neon-cyan/20 dark:to-transparent"
+                        className="absolute inset-0 bg-gradient-to-r from-pitch-500/10 to-transparent dark:from-neon-cyan/10 dark:to-transparent rounded-xl pointer-events-none"
                         initial={false}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                       />
                     )}
-                    <Icon size={22} className={`shrink-0 relative z-10 ${isActive ? 'text-pitch-400 dark:text-neon-cyan' : 'group-hover:scale-110 transition-transform'}`} />
+                    <div className="relative">
+                      <Icon size={22} className={`shrink-0 relative z-10 transition-all duration-300 ${isActive ? 'text-pitch-400 dark:text-neon-cyan drop-shadow-[0_0_8px_rgba(16,185,129,0.8)] dark:drop-shadow-[0_0_8px_rgba(0,240,255,0.8)] scale-110' : 'group-hover:scale-110 group-hover:-rotate-12'}`} />
+                    </div>
                     {!isSidebarCollapsed && <span className="relative z-10">{item.label}</span>}
                   </button>
                 );
@@ -163,22 +165,22 @@ export default function App() {
                 <button 
                   key={item.id}
                   onClick={() => setActiveTab(item.id as Tab)}
-                  className={`relative flex flex-col items-center gap-1 p-2 flex-1 rounded-xl transition-colors ${
+                  className={`relative flex flex-col items-center justify-center gap-1.5 p-2 flex-1 rounded-2xl transition-all duration-300 ${
                     isActive 
-                      ? 'text-pitch-600 dark:text-neon-cyan' 
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-game-800'
+                      ? 'text-white bg-slate-900 dark:bg-game-800 translate-y-[2px] shadow-[inset_0_3px_6px_rgba(0,0,0,0.4)] border border-slate-700 dark:border-game-700' 
+                      : 'text-slate-500 dark:text-slate-400 bg-transparent hover:bg-slate-100 dark:hover:bg-game-800'
                   }`}
                 >
                   {isActive && (
                     <motion.div 
                       layoutId="activeTabMobile"
-                      className="absolute inset-0 bg-pitch-50 dark:bg-neon-cyan/10 rounded-xl"
+                      className="absolute inset-0 bg-pitch-500/10 dark:bg-neon-cyan/10 rounded-2xl pointer-events-none"
                       initial={false}
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
-                  <Icon size={20} className="relative z-10" />
-                  <span className="text-[10px] font-display font-bold tracking-wider uppercase relative z-10">{item.label}</span>
+                  <Icon size={22} className={`relative z-10 transition-all duration-300 ${isActive ? 'text-pitch-400 dark:text-neon-cyan drop-shadow-[0_0_8px_rgba(16,185,129,0.8)] dark:drop-shadow-[0_0_8px_rgba(0,240,255,0.8)] scale-110' : 'group-hover:scale-110 group-hover:-rotate-12'}`} />
+                  <span className={`text-[10px] font-display font-bold tracking-wider uppercase relative z-10 transition-colors ${isActive ? 'text-pitch-400 dark:text-neon-cyan' : ''}`}>{item.label}</span>
                 </button>
               );
             })}

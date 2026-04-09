@@ -18,6 +18,7 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const [isAddingPlayer, setIsAddingPlayer] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
@@ -57,6 +58,19 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
     return undefined;
   };
 
+  const deleteAvatar = async (url: string) => {
+    if (!url) return;
+    try {
+      const fileName = url.split('/').pop();
+      if (fileName) {
+        const { error } = await supabase.storage.from('sf_avatars').remove([fileName]);
+        if (error) console.error("Error deleting avatar:", error);
+      }
+    } catch (error) {
+      console.error("Error deleting avatar:", error);
+    }
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -88,6 +102,9 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
     let avatar_url = editingPlayer.avatar_url;
     
     if (avatarFile) {
+      if (editingPlayer.avatar_url) {
+        await deleteAvatar(editingPlayer.avatar_url);
+      }
       const newUrl = await uploadAvatar(editingPlayer.id);
       if (newUrl) avatar_url = newUrl;
     }
@@ -119,10 +136,15 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
     setAvatarPreview(player.avatar_url || null);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deletingPlayer) {
+      setIsDeleting(true);
+      if (deletingPlayer.avatar_url) {
+        await deleteAvatar(deletingPlayer.avatar_url);
+      }
       onDeletePlayer(deletingPlayer.id);
       setDeletingPlayer(null);
+      setIsDeleting(false);
     }
   };
 
@@ -424,9 +446,10 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
                 </button>
                 <button 
                   onClick={confirmDelete}
-                  className="flex-1 py-4 rounded-xl font-display font-bold uppercase tracking-wider bg-red-600 text-white hover:bg-red-700 transition-colors shadow-lg"
+                  disabled={isDeleting}
+                  className="flex-1 py-4 rounded-xl font-display font-bold uppercase tracking-wider bg-red-600 text-white hover:bg-red-700 transition-colors shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  Xóa
+                  {isDeleting ? <Loader2 size={20} className="animate-spin" /> : 'Xóa'}
                 </button>
               </div>
             </div>

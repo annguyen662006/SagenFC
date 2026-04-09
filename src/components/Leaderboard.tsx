@@ -227,62 +227,86 @@ function Badge({ label, value, color }: { label: string, value: string, color: s
   );
 }
 
+function GamingMedal({ rank }: { rank: 1 | 2 | 3 }) {
+  const colors = {
+    1: { from: '#fde047', to: '#ca8a04', border: '#fef08a', glow: 'rgba(250, 204, 21, 0.6)' },
+    2: { from: '#e2e8f0', to: '#64748b', border: '#f8fafc', glow: 'rgba(148, 163, 184, 0.6)' },
+    3: { from: '#fdba74', to: '#c2410c', border: '#ffedd5', glow: 'rgba(249, 115, 22, 0.6)' }
+  }[rank];
+
+  return (
+    <motion.div
+      animate={{ y: [0, -8, 0], rotateZ: [0, 5, -5, 0] }}
+      transition={{ repeat: Infinity, duration: 3, ease: "easeInOut", delay: rank * 0.2 }}
+      className="relative w-12 h-12 sm:w-20 sm:h-20 flex items-center justify-center mb-2"
+      style={{ filter: `drop-shadow(0 10px 15px ${colors.glow})` }}
+    >
+      <div 
+        className="absolute inset-0 rotate-45 rounded-xl sm:rounded-2xl border-4"
+        style={{
+          background: `linear-gradient(135deg, ${colors.from}, ${colors.to})`,
+          borderColor: colors.border,
+          boxShadow: `inset -4px -4px 10px rgba(0,0,0,0.3), inset 4px 4px 10px rgba(255,255,255,0.5)`
+        }}
+      />
+      <div className="relative z-10 font-display font-black text-2xl sm:text-4xl text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+        {rank}
+      </div>
+    </motion.div>
+  );
+}
+
 function TopPlayerCard({ player, rank, className = '' }: { player: any, rank: number, className?: string }) {
   const isFirst = rank === 1;
   
-  const rankColors = {
-    1: 'from-yellow-400 to-amber-600 border-yellow-400/50 shadow-[0_0_30px_rgba(250,204,21,0.3)]',
-    2: 'from-slate-300 to-slate-500 border-slate-300/50',
-    3: 'from-amber-600 to-orange-800 border-amber-600/50'
+  const rankStyles = {
+    1: 'from-yellow-500/20 to-amber-600/20 border-yellow-400/50 shadow-[0_0_30px_rgba(250,204,21,0.2)]',
+    2: 'from-slate-300/20 to-slate-500/20 border-slate-300/50 shadow-[0_0_20px_rgba(148,163,184,0.2)]',
+    3: 'from-amber-600/20 to-orange-800/20 border-amber-600/50 shadow-[0_0_20px_rgba(217,119,6,0.2)]'
   };
 
   const rankTextColors = {
-    1: 'text-yellow-500',
-    2: 'text-slate-400',
-    3: 'text-amber-600'
+    1: 'text-yellow-500 dark:text-yellow-400',
+    2: 'text-slate-500 dark:text-slate-300',
+    3: 'text-amber-700 dark:text-amber-500'
   };
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: rank * 0.1 }}
-      className={`relative bg-white dark:bg-game-900 rounded-2xl border-2 ${isFirst ? 'md:-mt-4 md:mb-4 -mt-2 mb-2' : ''} ${rankColors[rank as keyof typeof rankColors]} overflow-hidden group ${className}`}
+      transition={{ type: "spring", bounce: 0.4, delay: rank * 0.1 }}
+      className={`relative bg-white/80 dark:bg-game-900/80 backdrop-blur-md rounded-3xl border-2 ${isFirst ? 'md:-mt-8 md:mb-8 -mt-4 mb-4 z-10' : 'z-0'} ${rankStyles[rank as keyof typeof rankStyles]} overflow-hidden group ${className}`}
     >
-      <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r ${rankColors[rank as keyof typeof rankColors]}`}></div>
+      {/* Glossy overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none"></div>
       
-      <div className="p-2 sm:p-6 flex flex-col items-center text-center relative z-10">
-        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 opacity-20 group-hover:opacity-40 transition-opacity">
-          {rank === 1 ? <Trophy className="w-6 h-6 sm:w-12 sm:h-12 text-yellow-500" /> : <Medal className={`w-6 h-6 sm:w-12 sm:h-12 ${rankTextColors[rank as keyof typeof rankTextColors]}`} />}
-        </div>
-
-        <div className={`text-2xl sm:text-5xl font-display font-black mb-1 sm:mb-2 ${rankTextColors[rank as keyof typeof rankTextColors]}`}>
-          #{rank}
-        </div>
+      <div className="p-3 sm:p-6 flex flex-col items-center text-center relative z-10">
+        <GamingMedal rank={rank as 1|2|3} />
         
-        <h3 className="text-xs sm:text-2xl font-display font-bold text-slate-800 dark:text-white uppercase tracking-wide truncate w-full px-1">
+        <h3 className="text-sm sm:text-2xl font-display font-black text-slate-800 dark:text-white uppercase tracking-wide truncate w-full px-1 drop-shadow-sm mt-2">
           {player.name}
         </h3>
-        <div className="text-[8px] sm:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 sm:mb-6">
+        <div className="text-[9px] sm:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 sm:mb-6 bg-slate-100 dark:bg-game-800 px-2 py-1 rounded-md mt-1">
           {player.position}
         </div>
 
-        <div className="text-lg sm:text-4xl font-display font-black text-pitch-600 dark:text-neon-cyan mb-2 sm:mb-6 drop-shadow-sm dark:text-glow-cyan">
-          {player.totalPoints.toLocaleString('vi-VN')} <span className="text-[8px] sm:text-lg text-slate-400">PTS</span>
+        <div className={`text-xl sm:text-5xl font-display font-black mb-3 sm:mb-6 drop-shadow-md ${rankTextColors[rank as keyof typeof rankTextColors]}`}>
+          {player.totalPoints.toLocaleString('vi-VN')} <span className="text-[10px] sm:text-xl opacity-70">PTS</span>
         </div>
 
-        <div className="w-full grid grid-cols-3 gap-1 sm:gap-2 border-t border-slate-100 dark:border-game-800 pt-2 sm:pt-4">
+        <div className="w-full grid grid-cols-3 gap-1 sm:gap-2 bg-slate-50/50 dark:bg-game-950/50 rounded-xl p-2 sm:p-3 border border-slate-200/50 dark:border-game-800/50">
           <div className="flex flex-col items-center">
             <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bàn</span>
-            <span className="text-xs sm:text-lg font-mono font-bold dark:text-slate-200">{player.goals}</span>
+            <span className="text-xs sm:text-lg font-mono font-black text-slate-700 dark:text-slate-200">{player.goals}</span>
           </div>
-          <div className="flex flex-col items-center border-x border-slate-100 dark:border-game-800">
+          <div className="flex flex-col items-center border-x border-slate-200/50 dark:border-game-800/50">
             <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kiến</span>
-            <span className="text-xs sm:text-lg font-mono font-bold dark:text-slate-200">{player.assists}</span>
+            <span className="text-xs sm:text-lg font-mono font-black text-slate-700 dark:text-slate-200">{player.assists}</span>
           </div>
           <div className="flex flex-col items-center">
             <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cản</span>
-            <span className="text-xs sm:text-lg font-mono font-bold dark:text-slate-200">{player.saves}</span>
+            <span className="text-xs sm:text-lg font-mono font-black text-slate-700 dark:text-slate-200">{player.saves}</span>
           </div>
         </div>
       </div>
