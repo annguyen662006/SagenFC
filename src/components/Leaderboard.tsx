@@ -228,30 +228,80 @@ function Badge({ label, value, color }: { label: string, value: string, color: s
 }
 
 function GamingMedal({ rank }: { rank: 1 | 2 | 3 }) {
+  const isFirst = rank === 1;
   const colors = {
-    1: { from: '#fde047', to: '#ca8a04', border: '#fef08a', glow: 'rgba(250, 204, 21, 0.6)' },
-    2: { from: '#e2e8f0', to: '#64748b', border: '#f8fafc', glow: 'rgba(148, 163, 184, 0.6)' },
-    3: { from: '#fdba74', to: '#c2410c', border: '#ffedd5', glow: 'rgba(249, 115, 22, 0.6)' }
+    1: { 
+      light: '#FFDF00', base: '#D4AF37', dark: '#996515', 
+      border: '#fff5cc', shadow: 'rgba(250, 204, 21, 0.4)',
+      ribbon: 'linear-gradient(to right, #b91c1c 0%, #ef4444 20%, #ef4444 40%, #fcd34d 40%, #fcd34d 60%, #ef4444 60%, #ef4444 80%, #b91c1c 100%)'
+    },
+    2: { 
+      light: '#F5F5F5', base: '#C0C0C0', dark: '#808080', 
+      border: '#ffffff', shadow: 'rgba(148, 163, 184, 0.3)',
+      ribbon: 'linear-gradient(to right, #1e3a8a 0%, #3b82f6 20%, #3b82f6 40%, #e2e8f0 40%, #e2e8f0 60%, #3b82f6 60%, #3b82f6 80%, #1e3a8a 100%)'
+    },
+    3: { 
+      light: '#E3A869', base: '#CD7F32', dark: '#8B4513', 
+      border: '#fcd3b6', shadow: 'rgba(217, 119, 6, 0.3)',
+      ribbon: 'linear-gradient(to right, #14532d 0%, #22c55e 20%, #22c55e 40%, #ffedd5 40%, #ffedd5 60%, #22c55e 60%, #22c55e 80%, #14532d 100%)'
+    }
   }[rank];
 
   return (
     <motion.div
-      animate={{ y: [0, -8, 0], rotateZ: [0, 5, -5, 0] }}
-      transition={{ repeat: Infinity, duration: 3, ease: "easeInOut", delay: rank * 0.2 }}
-      className="relative w-12 h-12 sm:w-20 sm:h-20 flex items-center justify-center mb-2"
-      style={{ filter: `drop-shadow(0 10px 15px ${colors.glow})` }}
+      animate={{ y: [0, -10, 0] }}
+      transition={{ repeat: Infinity, duration: isFirst ? 4 : (rank === 2 ? 5 : 4.5), ease: "easeInOut", delay: rank * 0.2 }}
+      className="relative flex flex-col items-center justify-center mb-6 sm:mb-8 z-20 group"
+      style={{ perspective: '1000px' }}
     >
+      {/* Ribbon */}
       <div 
-        className="absolute inset-0 rotate-45 rounded-xl sm:rounded-2xl border-4"
+        className={`absolute ${isFirst ? '-top-[60px] sm:-top-[80px] w-8 h-16 sm:w-12 sm:h-24' : '-top-[40px] sm:-top-[60px] w-6 h-12 sm:w-10 sm:h-20'} z-0`}
         style={{
-          background: `linear-gradient(135deg, ${colors.from}, ${colors.to})`,
-          borderColor: colors.border,
-          boxShadow: `inset -4px -4px 10px rgba(0,0,0,0.3), inset 4px 4px 10px rgba(255,255,255,0.5)`
+          background: colors.ribbon,
+          clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%)',
+          boxShadow: '0 5px 15px rgba(0,0,0,0.5)',
+          transform: 'translateZ(-10px)'
         }}
       />
-      <div className="relative z-10 font-display font-black text-2xl sm:text-4xl text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
-        {rank}
-      </div>
+
+      {/* Sparkles for Gold */}
+      {isFirst && (
+        <>
+          <motion.div animate={{ scale: [0, 1, 0], rotate: [0, 90, 180], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 2, delay: 0 }} className="absolute -top-4 -left-4 w-4 h-4 sm:w-5 sm:h-5 bg-yellow-200 z-30" style={{ clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
+          <motion.div animate={{ scale: [0, 1, 0], rotate: [0, 90, 180], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 2, delay: 0.6 }} className="absolute top-8 -right-6 w-4 h-4 sm:w-5 sm:h-5 bg-yellow-100 z-30" style={{ clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
+          <motion.div animate={{ scale: [0, 1, 0], rotate: [0, 90, 180], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 2, delay: 1.2 }} className="absolute -bottom-2 left-4 w-4 h-4 sm:w-5 sm:h-5 bg-white z-30" style={{ clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
+        </>
+      )}
+
+      {/* Medal Body */}
+      <motion.div 
+        whileHover={{ rotateX: 15, rotateY: -15, scale: 1.05 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        className={`relative rounded-full flex items-center justify-center z-10 cursor-pointer ${isFirst ? 'w-24 h-24 sm:w-36 sm:h-36' : (rank === 2 ? 'w-20 h-20 sm:w-28 sm:h-28' : 'w-16 h-16 sm:w-24 sm:h-24')}`}
+        style={{
+          background: `linear-gradient(135deg, ${colors.light} 0%, ${colors.base} 50%, ${colors.dark} 100%)`,
+          border: `3px solid ${colors.border}`,
+          boxShadow: `inset 0 0 0 3px rgba(255, 255, 255, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.2), 0 6px 0 ${colors.dark}, 0 10px 20px ${colors.shadow}`,
+          transformStyle: 'preserve-3d'
+        }}
+      >
+        {/* Inner Content */}
+        <div 
+          className="w-[76%] h-[76%] rounded-full flex flex-col items-center justify-center"
+          style={{
+            border: '2px dashed rgba(0,0,0,0.15)',
+            transform: 'translateZ(12px)',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%)',
+            textShadow: '1px 1px 0px rgba(255,255,255,0.4), -1px -1px 0px rgba(0,0,0,0.1)'
+          }}
+        >
+          <span className={`${isFirst ? 'text-4xl sm:text-6xl text-yellow-900' : (rank === 2 ? 'text-3xl sm:text-4xl text-gray-800' : 'text-2xl sm:text-3xl text-orange-950')} font-black mb-0.5 sm:mb-1 drop-shadow-sm`}>
+            {rank}
+          </span>
+          <Star className={`${isFirst ? 'w-4 h-4 sm:w-6 sm:h-6 text-yellow-900' : (rank === 2 ? 'w-3 h-3 sm:w-5 sm:h-5 text-gray-800' : 'w-3 h-3 sm:w-4 sm:h-4 text-orange-950')} opacity-80`} fill="currentColor" />
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
