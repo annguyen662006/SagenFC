@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Player } from '../types';
-import { Plus, Trash2, Edit2, X, AlertTriangle, Users } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, AlertTriangle, Users, Camera, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { supabase } from '../lib/supabase';
+import { resizeImage } from '../lib/imageUtils';
 
 interface PlayersProps {
   players: Player[];
@@ -13,37 +15,108 @@ interface PlayersProps {
 export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }: PlayersProps) {
   const [name, setName] = useState('');
   const [position, setPosition] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
   const [isAddingPlayer, setIsAddingPlayer] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [deletingPlayer, setDeletingPlayer] = useState<Player | null>(null);
 
-  const handleAdd = (e: React.FormEvent) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const resized = await resizeImage(file, 100);
+        setAvatarFile(resized);
+        setAvatarPreview(URL.createObjectURL(resized));
+      } catch (error) {
+        console.error("Error resizing image:", error);
+      }
+    }
+  };
+
+  const uploadAvatar = async (playerId: string): Promise<string | undefined> => {
+    if (!avatarFile) return undefined;
+    
+    const fileExt = 'jpg';
+    const fileName = `${playerId}-${Date.now()}.${fileExt}`;
+    
+    const { data, error } = await supabase.storage.from('sf_avatars').upload(fileName, avatarFile);
+    if (error) {
+      console.error("Error uploading avatar:", error);
+      return undefined;
+    }
+    
+    if (data) {
+      const { data: publicUrlData } = supabase.storage.from('sf_avatars').getPublicUrl(fileName);
+      return publicUrlData.publicUrl;
+    }
+    return undefined;
+  };
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
     
+    setIsUploading(true);
+    const playerId = crypto.randomUUID();
+    const avatar_url = await uploadAvatar(playerId);
+    
     onAddPlayer({
-      id: crypto.randomUUID(),
+      id: playerId,
       name: name.trim(),
-      position: position.trim() || 'Unknown'
+      position: position.trim() || 'Unknown',
+      avatar_url
     });
     
     setName('');
     setPosition('');
+    setAvatarFile(null);
+    setAvatarPreview(null);
     setIsAddingPlayer(false);
+    setIsUploading(false);
   };
 
-  const handleUpdate = (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPlayer || !editingPlayer.name.trim()) return;
+    
+    setIsUploading(true);
+    let avatar_url = editingPlayer.avatar_url;
+    
+    if (avatarFile) {
+      const newUrl = await uploadAvatar(editingPlayer.id);
+      if (newUrl) avatar_url = newUrl;
+    }
     
     onUpdatePlayer({
       ...editingPlayer,
       name: editingPlayer.name.trim(),
-      position: editingPlayer.position.trim() || 'Unknown'
+      position: editingPlayer.position.trim() || 'Unknown',
+      avatar_url
     });
     
     setEditingPlayer(null);
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setIsUploading(false);
+  };
+
+  const openAddModal = () => {
+    setName('');
+    setPosition('');
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setIsAddingPlayer(true);
+  };
+
+  const openEditModal = (player: Player) => {
+    setEditingPlayer(player);
+    setAvatarFile(null);
+    setAvatarPreview(player.avatar_url || null);
   };
 
   const confirmDelete = () => {
@@ -104,7 +177,7 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
           </p>
         </div>
         <button 
-          onClick={() => setIsAddingPlayer(true)}
+          onClick={openAddModal}
           className="relative z-10 w-full sm:w-auto flex items-center justify-center gap-2 bg-pitch-500 hover:bg-pitch-600 dark:bg-neon-cyan dark:hover:bg-cyan-400 text-white dark:text-game-950 px-6 py-3 rounded-xl font-display font-bold uppercase tracking-wider transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.3)] dark:shadow-[0_0_20px_rgba(0,240,255,0.3)]"
         >
           <Plus size={20} strokeWidth={3} />
@@ -132,7 +205,7 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
                 </div>
                 <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
-                    onClick={() => setEditingPlayer(player)}
+                    onClick={() => openEditModal(player)}
                     className="p-1 sm:p-1.5 text-blue-500 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-md transition-colors"
                   >
                     <Edit2 size={14} className="sm:w-4 sm:h-4" />
@@ -146,9 +219,18 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
                 </div>
               </div>
               
-              <h3 className="text-sm sm:text-xl font-display font-bold text-slate-800 dark:text-white mt-auto truncate" title={player.name}>
-                {player.name}
-              </h3>
+              <div className="mt-auto flex items-center gap-3">
+                {player.avatar_url ? (
+                  <img src={player.avatar_url} alt={player.name} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-white dark:border-game-800 shadow-sm shrink-0" />
+                ) : (
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-200 dark:bg-game-800 flex items-center justify-center border-2 border-white dark:border-game-900 shadow-sm shrink-0">
+                    <Users size={16} className="text-slate-400 dark:text-slate-500" />
+                  </div>
+                )}
+                <h3 className="text-sm sm:text-xl font-display font-bold text-slate-800 dark:text-white truncate" title={player.name}>
+                  {player.name}
+                </h3>
+              </div>
             </motion.div>
           );
         })}
@@ -168,6 +250,30 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
               </button>
             </div>
             <form onSubmit={handleAdd} className="p-6">
+              <div className="flex flex-col items-center mb-6">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  className="hidden" 
+                />
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative w-24 h-24 rounded-full bg-slate-100 dark:bg-game-800 border-2 border-dashed border-slate-300 dark:border-game-700 flex items-center justify-center cursor-pointer hover:border-pitch-500 dark:hover:border-neon-cyan transition-colors overflow-hidden group"
+                >
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera size={32} className="text-slate-400 group-hover:text-pitch-500 dark:group-hover:text-neon-cyan transition-colors" />
+                  )}
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera size={24} className="text-white" />
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-widest font-bold">Ảnh đại diện (Tùy chọn)</p>
+              </div>
+              
               <div className="space-y-5">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Tên cầu thủ</label>
@@ -195,15 +301,17 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
                 <button 
                   type="button"
                   onClick={() => setIsAddingPlayer(false)}
-                  className="flex-1 py-4 rounded-xl font-display font-bold uppercase tracking-wider bg-slate-100 dark:bg-game-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-game-700 transition-colors"
+                  disabled={isUploading}
+                  className="flex-1 py-4 rounded-xl font-display font-bold uppercase tracking-wider bg-slate-100 dark:bg-game-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-game-700 transition-colors disabled:opacity-50"
                 >
                   Hủy
                 </button>
                 <button 
                   type="submit"
-                  className="flex-1 py-4 rounded-xl font-display font-bold uppercase tracking-wider bg-pitch-500 dark:bg-neon-cyan text-white dark:text-game-950 hover:bg-pitch-600 dark:hover:bg-cyan-400 transition-colors shadow-lg"
+                  disabled={isUploading}
+                  className="flex-1 py-4 rounded-xl font-display font-bold uppercase tracking-wider bg-pitch-500 dark:bg-neon-cyan text-white dark:text-game-950 hover:bg-pitch-600 dark:hover:bg-cyan-400 transition-colors shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  Thêm cầu thủ
+                  {isUploading ? <Loader2 size={20} className="animate-spin" /> : 'Thêm cầu thủ'}
                 </button>
               </div>
             </form>
@@ -225,6 +333,30 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
               </button>
             </div>
             <form onSubmit={handleUpdate} className="p-6">
+              <div className="flex flex-col items-center mb-6">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  className="hidden" 
+                />
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative w-24 h-24 rounded-full bg-slate-100 dark:bg-game-800 border-2 border-dashed border-slate-300 dark:border-game-700 flex items-center justify-center cursor-pointer hover:border-pitch-500 dark:hover:border-neon-cyan transition-colors overflow-hidden group"
+                >
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera size={32} className="text-slate-400 group-hover:text-pitch-500 dark:group-hover:text-neon-cyan transition-colors" />
+                  )}
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera size={24} className="text-white" />
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-widest font-bold">Ảnh đại diện (Tùy chọn)</p>
+              </div>
+
               <div className="space-y-5">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Tên cầu thủ</label>
@@ -250,15 +382,17 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
                 <button 
                   type="button"
                   onClick={() => setEditingPlayer(null)}
-                  className="flex-1 py-4 rounded-xl font-display font-bold uppercase tracking-wider bg-slate-100 dark:bg-game-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-game-700 transition-colors"
+                  disabled={isUploading}
+                  className="flex-1 py-4 rounded-xl font-display font-bold uppercase tracking-wider bg-slate-100 dark:bg-game-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-game-700 transition-colors disabled:opacity-50"
                 >
                   Hủy
                 </button>
                 <button 
                   type="submit"
-                  className="flex-1 py-4 rounded-xl font-display font-bold uppercase tracking-wider bg-pitch-500 dark:bg-neon-cyan text-white dark:text-game-950 hover:bg-pitch-600 dark:hover:bg-cyan-400 transition-colors shadow-lg"
+                  disabled={isUploading}
+                  className="flex-1 py-4 rounded-xl font-display font-bold uppercase tracking-wider bg-pitch-500 dark:bg-neon-cyan text-white dark:text-game-950 hover:bg-pitch-600 dark:hover:bg-cyan-400 transition-colors shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  Lưu thay đổi
+                  {isUploading ? <Loader2 size={20} className="animate-spin" /> : 'Lưu thay đổi'}
                 </button>
               </div>
             </form>

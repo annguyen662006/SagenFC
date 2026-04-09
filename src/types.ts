@@ -2,6 +2,7 @@ export interface Player {
   id: string;
   name: string;
   position: string;
+  avatar_url?: string;
 }
 
 export interface PlayerMatchStat {

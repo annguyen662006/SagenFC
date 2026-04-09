@@ -41,9 +41,13 @@ export default function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-game-950">
         <div className="flex flex-col items-center gap-4">
-          <div className="relative flex items-center justify-center w-16 h-16">
-            <Hexagon className="absolute inset-0 w-full h-full text-pitch-500 dark:text-neon-cyan animate-pulse" strokeWidth={1.5} />
-            <Trophy className="w-8 h-8 text-slate-800 dark:text-white z-10" strokeWidth={2} />
+          <div className="relative flex items-center justify-center w-20 h-20 mb-2">
+            <img 
+              src="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/sagenfc/pictures/logo-sagenfc.png" 
+              alt="SAGEN FC Logo" 
+              className="w-full h-full object-contain animate-pulse"
+              referrerPolicy="no-referrer"
+            />
           </div>
           <p className="text-sm font-display font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest animate-pulse">
             Đang tải dữ liệu...
@@ -69,8 +73,12 @@ export default function App() {
               </button>
               <div className="flex items-center gap-2">
                 <div className="relative flex items-center justify-center w-10 h-10 md:w-12 md:h-12">
-                  <Hexagon className="absolute inset-0 w-full h-full text-pitch-500 dark:text-neon-cyan drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] dark:drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]" strokeWidth={1.5} />
-                  <Trophy className="w-5 h-5 md:w-6 md:h-6 text-slate-800 dark:text-white z-10" strokeWidth={2} />
+                  <img 
+                    src="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/sagenfc/pictures/logo-sagenfc.png" 
+                    alt="SAGEN FC Logo" 
+                    className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] dark:drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]"
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
                 <h1 className="text-2xl md:text-3xl font-display font-black tracking-wider uppercase bg-gradient-to-br from-slate-800 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                   SAGEN <span className="text-pitch-500 dark:text-neon-cyan">FC</span>
