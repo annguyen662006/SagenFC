@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Player } from '../types';
-import { Plus, Trash2, Edit2, X, AlertTriangle, Users, Camera, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, AlertTriangle, Users, Camera, Loader2, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../lib/supabase';
-import { resizeImage } from '../lib/imageUtils';
+import { resizeImage, getCroppedImg } from '../lib/imageUtils';
+import Cropper from 'react-easy-crop';
 
 interface PlayersProps {
   players: Player[];
@@ -24,19 +25,55 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [deletingPlayer, setDeletingPlayer] = useState<Player | null>(null);
 
+  // Cropper states
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [isCropping, setIsCropping] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        setImageToCrop(reader.result as string);
+        setIsCropping(true);
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
+      };
+    }
+    // Reset input so the same file can be selected again if needed
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleCropConfirm = async () => {
+    if (imageToCrop && croppedAreaPixels) {
       try {
-        const resized = await resizeImage(file, 100);
+        const croppedFile = await getCroppedImg(imageToCrop, croppedAreaPixels);
+        const resized = await resizeImage(croppedFile, 100);
         setAvatarFile(resized);
         setAvatarPreview(URL.createObjectURL(resized));
+        setIsCropping(false);
+        setImageToCrop(null);
       } catch (error) {
-        console.error("Error resizing image:", error);
+        console.error("Error cropping image:", error);
       }
     }
+  };
+
+  const handleCropCancel = () => {
+    setIsCropping(false);
+    setImageToCrop(null);
   };
 
   const uploadAvatar = async (playerId: string): Promise<string | undefined> => {
@@ -257,6 +294,55 @@ export function Players({ players, onAddPlayer, onUpdatePlayer, onDeletePlayer }
           );
         })}
       </div>
+
+      {/* Cropper Modal */}
+      {isCropping && imageToCrop && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] flex flex-col items-center justify-center p-4">
+          <div className="relative w-full max-w-md h-[60vh] bg-black rounded-2xl overflow-hidden">
+            <Cropper
+              image={imageToCrop}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="round"
+              showGrid={false}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
+            />
+          </div>
+          <div className="w-full max-w-md mt-6 space-y-4">
+            <div className="flex items-center gap-4 px-4">
+              <span className="text-white text-sm">Thu phóng</span>
+              <input
+                type="range"
+                value={zoom}
+                min={1}
+                max={3}
+                step={0.1}
+                aria-labelledby="Zoom"
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-pitch-500"
+              />
+            </div>
+            <div className="flex gap-3 px-4">
+              <button 
+                onClick={handleCropCancel}
+                className="flex-1 py-3 rounded-xl font-display font-bold uppercase tracking-wider bg-slate-800 text-white hover:bg-slate-700 transition-colors"
+              >
+                Hủy
+              </button>
+              <button 
+                onClick={handleCropConfirm}
+                className="flex-1 py-3 rounded-xl font-display font-bold uppercase tracking-wider bg-pitch-500 text-white hover:bg-pitch-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <Check size={20} />
+                Cắt ảnh
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Player Modal */}
       {isAddingPlayer && (

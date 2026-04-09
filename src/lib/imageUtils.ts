@@ -1,3 +1,48 @@
+export const getCroppedImg = async (
+  imageSrc: string,
+  pixelCrop: { x: number; y: number; width: number; height: number }
+): Promise<File> => {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = (error) => reject(error);
+    img.src = imageSrc;
+  });
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    throw new Error('No 2d context');
+  }
+
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Canvas is empty'));
+        return;
+      }
+      const file = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
+      resolve(file);
+    }, 'image/jpeg');
+  });
+};
+
 export const resizeImage = (file: File, maxSizeKB: number = 100): Promise<File> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
