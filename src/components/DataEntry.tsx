@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Player, MatchRecord, PlayerMatchStat } from '../types';
-import { Plus, Minus, Save, Trash2, Edit2, X, Check, UserPlus, AlertTriangle, Calendar, Activity, Users } from 'lucide-react';
+import { Plus, Minus, Save, Trash2, Edit2, X, Check, UserPlus, AlertTriangle, Calendar, Activity, Users, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { motion } from 'motion/react';
+
+import { ImageCropperModal } from './ImageCropperModal';
 
 interface DataEntryProps {
   players: Player[];
@@ -16,9 +18,10 @@ interface DataEntryProps {
 export function DataEntry({ players, matches, onSave, onUpdate, onDelete }: DataEntryProps) {
   const [editMode, setEditMode] = useState<'none' | 'draft' | string>('none');
   const [draft, setDraft] = useState<MatchRecord | null>(null);
+  const [showMatchSetup, setShowMatchSetup] = useState(false);
 
   const [attendanceModalOpen, setAttendanceModalOpen] = useState(false);
-  const [statModal, setStatModal] = useState<{ type: 'goals' | 'assists' | 'saves', action: 'add' | 'remove' } | null>(null);
+  const [statModal, setStatModal] = useState<{ type: 'goals' | 'assists' | 'saves' | 'skp', action: 'add' | 'remove' } | null>(null);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [deletingMatch, setDeletingMatch] = useState<MatchRecord | null>(null);
 
@@ -27,21 +30,27 @@ export function DataEntry({ players, matches, onSave, onUpdate, onDelete }: Data
       id: crypto.randomUUID(),
       date: new Date().toISOString().split('T')[0],
       description: '',
+      opponent: '',
+      opponent_logo: '',
+      home_score: 0,
+      away_score: 0,
       stats: players.map(p => ({
         playerId: p.id,
         goals: 0,
         assists: 0,
         saves: 0,
+        skp: 0,
         attended: false
       }))
     });
     setEditMode('draft');
+    setShowMatchSetup(true);
   };
 
   const handleEdit = (match: MatchRecord) => {
     const completeStats = players.map(p => {
       const existing = match.stats.find(s => s.playerId === p.id);
-      return existing || { playerId: p.id, goals: 0, assists: 0, saves: 0, attended: false };
+      return existing || { playerId: p.id, goals: 0, assists: 0, saves: 0, skp: 0, attended: false };
     });
     setDraft({ ...match, stats: completeStats });
     setEditMode(match.id);
@@ -58,18 +67,19 @@ export function DataEntry({ players, matches, onSave, onUpdate, onDelete }: Data
         goals: attendedIds.has(s.playerId) ? s.goals : 0,
         assists: attendedIds.has(s.playerId) ? s.assists : 0,
         saves: attendedIds.has(s.playerId) ? s.saves : 0,
+        skp: attendedIds.has(s.playerId) ? (s.skp || 0) : 0,
       }))
     });
     setAttendanceModalOpen(false);
   };
 
-  const handleStatChange = (playerId: string, type: 'goals' | 'assists' | 'saves', action: 'add' | 'remove') => {
+  const handleStatChange = (playerId: string, type: 'goals' | 'assists' | 'saves' | 'skp', action: 'add' | 'remove') => {
     if (!draft) return;
     setDraft({
       ...draft,
       stats: draft.stats.map(s => {
         if (s.playerId === playerId) {
-          const current = s[type];
+          const current = s[type] || 0;
           const newValue = action === 'add' ? current + 1 : Math.max(0, current - 1);
           return { ...s, [type]: newValue };
         }
@@ -83,7 +93,7 @@ export function DataEntry({ players, matches, onSave, onUpdate, onDelete }: Data
     if (!draft) return;
     const matchToSave = {
       ...draft,
-      stats: draft.stats.filter(s => s.attended || s.goals > 0 || s.assists > 0 || s.saves > 0)
+      stats: draft.stats.filter(s => s.attended || s.goals > 0 || s.assists > 0 || s.saves > 0 || (s.skp && s.skp > 0))
     };
     if (editMode === 'draft') onSave(matchToSave);
     else onUpdate(matchToSave);
@@ -190,7 +200,43 @@ export function DataEntry({ players, matches, onSave, onUpdate, onDelete }: Data
                   <div className="absolute inset-0 border-2 border-transparent group-hover:border-pitch-500/50 dark:group-hover:border-neon-cyan/50 rounded-2xl transition-colors pointer-events-none"></div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                <div className="bg-white dark:bg-game-800 p-6 rounded-2xl border border-slate-200 dark:border-game-700 space-y-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Tỷ số trận đấu</h4>
+                    <button 
+                      onClick={() => setShowMatchSetup(true)}
+                      className="text-xs font-bold text-pitch-600 dark:text-neon-cyan hover:underline uppercase flex items-center gap-1"
+                    >
+                      <Edit2 size={12} /> Sửa thông tin đối thủ
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center justify-center gap-4 sm:gap-8">
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="font-display font-black uppercase text-xl text-slate-800 dark:text-white">SAGEN FC</span>
+                      <input 
+                        type="number" 
+                        min="0"
+                        value={draft.home_score || 0}
+                        onChange={(e) => setDraft({...draft, home_score: parseInt(e.target.value) || 0})}
+                        className="w-20 md:w-24 text-center border-2 border-slate-200 dark:border-game-700 bg-slate-50 dark:bg-game-900 text-slate-900 dark:text-white rounded-xl px-2 py-3 font-display font-black text-3xl focus:outline-none focus:border-pitch-500 dark:focus:border-neon-cyan transition-colors"
+                      />
+                    </div>
+                    <div className="text-2xl font-black text-slate-300 dark:text-game-600">-</div>
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="font-display font-black uppercase text-xl text-slate-800 dark:text-white">{draft.opponent || 'ĐỐI THỦ'}</span>
+                      <input 
+                        type="number" 
+                        min="0"
+                        value={draft.away_score || 0}
+                        onChange={(e) => setDraft({...draft, away_score: parseInt(e.target.value) || 0})}
+                        className="w-20 md:w-24 text-center border-2 border-slate-200 dark:border-game-700 bg-slate-50 dark:bg-game-900 text-slate-900 dark:text-white rounded-xl px-2 py-3 font-display font-black text-3xl focus:outline-none focus:border-pitch-500 dark:focus:border-neon-cyan transition-colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                   <StatControl 
                     label="Bàn thắng" 
                     value={draft.stats.reduce((sum, s) => sum + s.goals, 0)} 
@@ -204,6 +250,13 @@ export function DataEntry({ players, matches, onSave, onUpdate, onDelete }: Data
                     onAdd={() => setStatModal({ type: 'assists', action: 'add' })} 
                     onRemove={() => setStatModal({ type: 'assists', action: 'remove' })} 
                     color="purple"
+                  />
+                  <StatControl 
+                    label="SKP" 
+                    value={draft.stats.reduce((sum, s) => sum + (s.skp || 0), 0)} 
+                    onAdd={() => setStatModal({ type: 'skp', action: 'add' })} 
+                    onRemove={() => setStatModal({ type: 'skp', action: 'remove' })} 
+                    color="emerald"
                   />
                   <StatControl 
                     label="Cản phá" 
@@ -269,9 +322,10 @@ export function DataEntry({ players, matches, onSave, onUpdate, onDelete }: Data
                   </button>
                 </div>
               </div>
-              <div className="p-5 grid grid-cols-3 gap-4 text-center divide-x divide-slate-100 dark:divide-game-800">
+              <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-center border-t border-slate-100 dark:border-game-800 divide-y md:divide-y-0 text-sm md:divide-x divide-slate-100 dark:divide-game-800">
                 <StatSummary label="Bàn thắng" value={match.stats.reduce((sum, s) => sum + s.goals, 0)} players={match.stats.filter(s => s.goals > 0).map(s => getPlayerName(s.playerId))} />
                 <StatSummary label="Kiến tạo" value={match.stats.reduce((sum, s) => sum + s.assists, 0)} players={match.stats.filter(s => s.assists > 0).map(s => getPlayerName(s.playerId))} />
+                <StatSummary label="SKP" value={match.stats.reduce((sum, s) => sum + (s.skp || 0), 0)} players={match.stats.filter(s => (s.skp || 0) > 0).map(s => getPlayerName(s.playerId))} />
                 <StatSummary label="Cản phá" value={match.stats.reduce((sum, s) => sum + s.saves, 0)} players={match.stats.filter(s => s.saves > 0).map(s => getPlayerName(s.playerId))} />
               </div>
             </motion.div>
@@ -286,6 +340,26 @@ export function DataEntry({ players, matches, onSave, onUpdate, onDelete }: Data
       )}
 
       {/* Modals */}
+      {showMatchSetup && draft && (
+        <MatchSetupModal 
+          initialOpponent={draft.opponent || ''}
+          initialOpponentLogo={draft.opponent_logo || ''}
+          matches={matches}
+          onSave={(opponent, logo) => {
+            setDraft({ ...draft, opponent, opponent_logo: logo });
+            setShowMatchSetup(false);
+            if (editMode === 'draft') setAttendanceModalOpen(true);
+          }}
+          onClose={() => {
+            if (editMode === 'draft' && !draft.opponent) {
+              setEditMode('none');
+              setDraft(null);
+            }
+            setShowMatchSetup(false);
+          }}
+        />
+      )}
+
       {attendanceModalOpen && draft && (
         <AttendanceModal 
           date={draft.date}
@@ -388,17 +462,19 @@ function StatSummary({ label, value, players }: { label: string, value: number, 
   );
 }
 
-function StatControl({ label, value, onAdd, onRemove, color }: { label: string, value: number, onAdd: () => void, onRemove: () => void, color: 'blue' | 'purple' | 'orange' }) {
+function StatControl({ label, value, onAdd, onRemove, color }: { label: string, value: number, onAdd: () => void, onRemove: () => void, color: 'blue' | 'purple' | 'orange' | 'emerald' }) {
   const colorClasses = {
     blue: 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-900/50 text-blue-600 dark:text-blue-400',
     purple: 'bg-purple-50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-900/50 text-purple-600 dark:text-purple-400',
     orange: 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400',
+    emerald: 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-900/50 text-emerald-600 dark:text-emerald-400',
   };
 
   const btnColors = {
     blue: 'bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-800/50 text-blue-700 dark:text-blue-300',
     purple: 'bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-700 dark:text-purple-300',
     orange: 'bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-800/50 text-orange-700 dark:text-orange-300',
+    emerald: 'bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 text-emerald-700 dark:text-emerald-300',
   };
 
   return (
@@ -504,9 +580,9 @@ function AttendanceModal({ date: initialDate, players, initialAttended, onSave, 
 }
 
 function StatModal({ type, action, players, matchStats, onSelect, onClose }: {
-  type: 'goals' | 'assists' | 'saves', action: 'add' | 'remove', players: Player[], matchStats: PlayerMatchStat[], onSelect: (id: string) => void, onClose: () => void
+  type: 'goals' | 'assists' | 'saves' | 'skp', action: 'add' | 'remove', players: Player[], matchStats: PlayerMatchStat[], onSelect: (id: string) => void, onClose: () => void
 }) {
-  const title = type === 'goals' ? 'Bàn thắng' : type === 'assists' ? 'Kiến tạo' : 'Cản phá';
+  const title = type === 'goals' ? 'Bàn thắng' : type === 'assists' ? 'Kiến tạo' : type === 'saves' ? 'Cản phá' : 'SKP';
   const isAdd = action === 'add';
   
   const availablePlayers = isAdd
@@ -562,5 +638,132 @@ function StatModal({ type, action, players, matchStats, onSelect, onClose }: {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+function MatchSetupModal({ initialOpponent, initialOpponentLogo, matches, onSave, onClose }: {
+  initialOpponent: string; initialOpponentLogo: string; matches: MatchRecord[]; onSave: (opp: string, logo: string) => void; onClose: () => void;
+}) {
+  const [opponent, setOpponent] = useState(initialOpponent);
+  const [logo, setLogo] = useState(initialOpponentLogo);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+
+  // Derive unique opponents from past matches
+  const uniqueOpponentsMap = new Map<string, string>();
+  matches.forEach(m => {
+    if (m.opponent) {
+      uniqueOpponentsMap.set(m.opponent, m.opponent_logo || '');
+    }
+  });
+  const uniqueOpponents = Array.from(uniqueOpponentsMap.entries()).map(([name, logo]) => ({ name, logo }));
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.addEventListener('load', () => setImageToCrop(reader.result?.toString() || null));
+      reader.readAsDataURL(file);
+      e.target.value = ''; // Reset so we can re-upload the same file if needed
+    }
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <motion.div 
+          initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+          className="bg-white dark:bg-game-900 w-full max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] border border-slate-200 dark:border-game-800"
+        >
+          <div className="p-6 border-b border-slate-100 dark:border-game-800 flex justify-between items-center bg-slate-50 dark:bg-game-900/50">
+            <h3 className="text-xl font-display font-black uppercase tracking-wider text-slate-800 dark:text-white">Thông Tin Trận Đấu</h3>
+            <button onClick={onClose} className="p-2 bg-white dark:bg-game-800 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-full shadow-sm transition-colors border border-slate-200 dark:border-game-700">
+              <X size={20} strokeWidth={3} />
+            </button>
+          </div>
+          
+          <div className="p-6 overflow-y-auto flex-1 space-y-6 bg-white dark:bg-game-950">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">Tên Đối Thủ</label>
+              <input 
+                type="text" 
+                placeholder="Nhập tên đối thủ..."
+                value={opponent}
+                onChange={(e) => setOpponent(e.target.value)}
+                className="w-full border-2 border-slate-200 dark:border-game-700 bg-slate-50 dark:bg-game-900 text-slate-900 dark:text-white rounded-xl px-4 py-3 font-medium focus:outline-none focus:border-pitch-500 dark:focus:border-neon-cyan transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">Ảnh Logo Đối Thủ (URL hoặc Tải lên)</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="https://example.com/logo.png"
+                  value={logo}
+                  onChange={(e) => setLogo(e.target.value)}
+                  className="flex-1 w-full border-2 border-slate-200 dark:border-game-700 bg-slate-50 dark:bg-game-900 text-slate-900 dark:text-white rounded-xl px-4 py-3 font-medium focus:outline-none focus:border-pitch-500 dark:focus:border-neon-cyan transition-colors text-sm"
+                />
+                
+                <label className="shrink-0 flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-game-800 dark:hover:bg-game-700 text-slate-600 dark:text-slate-300 w-12 h-[52px] rounded-xl cursor-pointer transition-colors border-2 border-slate-200 dark:border-game-700">
+                  <Upload size={20} />
+                  <input type="file" accept="image/*" className="hidden" onChange={onFileChange} />
+                </label>
+              </div>
+
+              {logo && (
+                <div className="mt-3 w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-game-800 border-2 border-slate-200 dark:border-game-700 p-1 relative group">
+                  <img src={logo} alt="Preview logo" className="w-full h-full object-cover rounded-full" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                  <button onClick={() => setLogo('')} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <X size={16} className="text-white" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+          {uniqueOpponents.length > 0 && (
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Hoặc chọn đối thủ cũ</label>
+              <div className="flex gap-2 overflow-x-auto pb-2 snap-x hide-scrollbar">
+                {uniqueOpponents.map((opp, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setOpponent(opp.name);
+                      setLogo(opp.logo);
+                    }}
+                    className={`flex items-center gap-2 px-3 py-2 shrink-0 snap-start rounded-xl border-2 transition-all ${opponent === opp.name ? 'border-pitch-500 dark:border-neon-cyan bg-pitch-50 dark:bg-neon-cyan/10' : 'border-slate-200 dark:border-game-700 bg-white dark:bg-game-800 hover:border-pitch-300 dark:hover:border-neon-cyan/50'}`}
+                  >
+                    {opp.logo && <img src={opp.logo} alt="" className="w-6 h-6 rounded-full object-cover" />}
+                    <span className="font-bold text-sm text-slate-700 dark:text-slate-300">{opp.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-slate-100 dark:border-game-800 bg-slate-50 dark:bg-game-900">
+          <button 
+            onClick={() => onSave(opponent, logo)}
+            disabled={!opponent.trim()}
+            className="w-full bg-pitch-500 dark:bg-neon-cyan text-white dark:text-game-950 py-4 rounded-2xl font-display font-black text-lg uppercase tracking-widest hover:bg-pitch-600 dark:hover:bg-cyan-400 transition-all shadow-[0_4px_14px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:shadow-none"
+          >
+            Tiếp tục
+          </button>
+        </div>
+      </motion.div>
+      </div>
+      
+      {imageToCrop && (
+        <ImageCropperModal 
+          imageSrc={imageToCrop} 
+          onClose={() => setImageToCrop(null)} 
+          onComplete={(url) => {
+            setLogo(url);
+            setImageToCrop(null);
+          }} 
+        />
+      )}
+    </>
   );
 }

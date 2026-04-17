@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, forwardRef } from 'react';
 import { Player, MatchRecord } from '../types';
-import { Trophy, Medal, Star, Maximize2, X, RotateCw, Users } from 'lucide-react';
+import { Trophy, Medal, Star, Maximize2, X, RotateCw, Users, Download, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toPng } from 'html-to-image';
 
 interface LeaderboardProps {
   players: Player[];
@@ -10,17 +11,51 @@ interface LeaderboardProps {
 
 export function Leaderboard({ players, matches }: LeaderboardProps) {
   const [isLandscapeView, setIsLandscapeView] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  const captureAndDownload = async () => {
+    if (!exportRef.current) return;
+    setIsExporting(true);
+    try {
+      // Small timeout to ensure fonts and frames are ready
+      await new Promise(res => setTimeout(res, 100));
+      const isDark = document.documentElement.classList.contains('dark');
+      
+      // Toggle a temporary 'dark' class on the snapshot wrapper ensuring styles are forced correctly
+      if (isDark) {
+        exportRef.current.classList.add('dark');
+      } else {
+        exportRef.current.classList.remove('dark');
+      }
+
+      const dataUrl = await toPng(exportRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+      });
+      const link = document.createElement('a');
+      link.download = `SagenFC_BXH_${new Date().toISOString().split('T')[0]}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Error exporting image', err);
+      alert('Không thể xuất ảnh, vui lòng thử lại.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const stats = useMemo(() => {
     const playerStats: Record<string, {
       goals: number;
       assists: number;
       saves: number;
+      skp: number;
       attendance: number;
     }> = {};
 
     players.forEach(p => {
-      playerStats[p.id] = { goals: 0, assists: 0, saves: 0, attendance: 0 };
+      playerStats[p.id] = { goals: 0, assists: 0, saves: 0, skp: 0, attendance: 0 };
     });
 
     matches.forEach(match => {
@@ -29,6 +64,7 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
           playerStats[stat.playerId].goals += stat.goals;
           playerStats[stat.playerId].assists += stat.assists;
           playerStats[stat.playerId].saves += stat.saves;
+          playerStats[stat.playerId].skp += stat.skp || 0;
           if (stat.attended) {
             playerStats[stat.playerId].attendance += 1;
           }
@@ -38,7 +74,7 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
 
     return players.map(p => {
       const s = playerStats[p.id];
-      const points = s.goals * 2 + s.assists * 1.5 + s.saves * 1;
+      const points = s.goals * 2 + s.assists * 1.5 + s.saves * 1 + (s.skp || 0) * 1.5;
       const totalPoints = points + s.attendance * 1;
       return {
         ...p,
@@ -56,11 +92,21 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="bg-white dark:bg-game-900 rounded-2xl shadow-sm border border-slate-200 dark:border-game-800 p-6 relative overflow-hidden">
+      <div className="bg-white dark:bg-game-900 rounded-2xl shadow-sm border border-slate-200 dark:border-game-800 p-6 relative overflow-hidden flex justify-between items-center">
         <div className="absolute top-0 right-0 w-64 h-64 bg-pitch-500/10 dark:bg-neon-cyan/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
         <h2 className="text-2xl md:text-3xl font-display font-black uppercase tracking-wider text-slate-800 dark:text-white relative z-10">
           Bảng Xếp <span className="text-pitch-500 dark:text-neon-cyan">Hạng</span>
         </h2>
+        
+        <button
+          onClick={captureAndDownload}
+          disabled={isExporting}
+          className="relative z-10 flex items-center gap-2 bg-gradient-to-r from-pitch-600 to-pitch-400 dark:from-cyan-600 dark:to-neon-cyan text-white px-3 py-2 md:px-4 md:py-2.5 rounded-xl font-bold uppercase tracking-wider text-[10px] sm:text-xs md:text-sm transition-transform active:scale-95 disabled:opacity-70 disabled:scale-100 shadow-md"
+        >
+          {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+          <span className="hidden sm:inline">{isExporting ? 'Đang tạo ảnh...' : 'Lưu ảnh'}</span>
+          <span className="sm:hidden">{isExporting ? 'Đang tải...' : 'Lưu ảnh'}</span>
+        </button>
       </div>
 
       {/* Top 3 Podium */}
@@ -99,11 +145,11 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
                       <span className="md:hidden">Kiến</span>
                       <span className="hidden md:inline">Kiến tạo</span>
                     </th>
+                    <th className="p-1.5 md:p-4 border-b border-slate-200 dark:border-game-700 text-center">SKP</th>
                     <th className="p-1.5 md:p-4 border-b border-slate-200 dark:border-game-700 text-center">
                       <span className="md:hidden">Cản</span>
                       <span className="hidden md:inline">Cản phá</span>
                     </th>
-                    <th className="p-1.5 md:p-4 border-b border-slate-200 dark:border-game-700 text-center">Điểm</th>
                     <th className="p-1.5 md:p-4 border-b border-slate-200 dark:border-game-700 text-center">Trận</th>
                     <th className="p-1.5 md:p-4 border-b border-slate-200 dark:border-game-700 text-center text-pitch-600 dark:text-neon-cyan">Tổng</th>
                   </tr>
@@ -113,13 +159,24 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
                     <tr key={row.id} className="even:bg-slate-50/50 odd:bg-white dark:even:bg-game-800/30 dark:odd:bg-game-900 hover:bg-slate-100 dark:hover:bg-game-800/80 transition-colors group">
                       <td className="p-1.5 md:p-4 text-center font-display font-bold text-slate-400 dark:text-slate-500">{index + 4}</td>
                       <td className="p-1.5 md:p-4">
-                        <div className="font-bold text-slate-800 dark:text-slate-100 truncate max-w-[70px] md:max-w-none">{row.name}</div>
-                        <div className="text-[9px] md:text-xs text-slate-500 dark:text-slate-400 mt-0.5">{row.position}</div>
+                        <div className="flex items-center gap-2 md:gap-3">
+                          {row.avatar_url ? (
+                            <img src={row.avatar_url} alt={row.name} className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover shrink-0 border border-slate-200 dark:border-game-700" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-200 dark:bg-game-800 border border-slate-300 dark:border-game-700">
+                              <Users size={14} className="text-slate-400" />
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-bold text-slate-800 dark:text-slate-100 truncate max-w-[70px] md:max-w-none">{row.name}</div>
+                            <div className="text-[9px] md:text-xs text-slate-500 dark:text-slate-400 mt-0.5">{row.position}</div>
+                          </div>
+                        </div>
                       </td>
                       <td className="p-1.5 md:p-4 text-center font-mono font-medium dark:text-slate-300">{row.goals}</td>
                       <td className="p-1.5 md:p-4 text-center font-mono font-medium dark:text-slate-300">{row.assists}</td>
+                      <td className="p-1.5 md:p-4 text-center font-mono font-medium dark:text-slate-300">{row.skp}</td>
                       <td className="p-1.5 md:p-4 text-center font-mono font-medium dark:text-slate-300">{row.saves}</td>
-                      <td className="p-1.5 md:p-4 text-center font-mono font-medium text-slate-500 dark:text-slate-400">{row.points.toLocaleString('vi-VN')}</td>
                       <td className="p-1.5 md:p-4 text-center font-mono font-medium dark:text-slate-300">{row.attendance}</td>
                       <td className="p-1.5 md:p-4 text-center font-mono font-bold text-sm md:text-lg text-pitch-600 dark:text-neon-cyan">{row.totalPoints.toLocaleString('vi-VN')}</td>
                     </tr>
@@ -143,6 +200,7 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
         <div className="flex flex-wrap gap-3">
           <Badge label="Bàn thắng" value="2đ" color="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800" />
           <Badge label="Kiến tạo" value="1.5đ" color="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800" />
+          <Badge label="SKP" value="1.5đ" color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800" />
           <Badge label="Cản phá" value="1đ" color="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800" />
           <Badge label="Chuyên cần" value="1đ/trận" color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800" />
         </div>
@@ -186,8 +244,8 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
                       <th className="p-2 border-b border-slate-200 dark:border-game-700">Tuyển thủ</th>
                       <th className="p-2 border-b border-slate-200 dark:border-game-700 text-center">Bàn</th>
                       <th className="p-2 border-b border-slate-200 dark:border-game-700 text-center">Kiến</th>
+                      <th className="p-2 border-b border-slate-200 dark:border-game-700 text-center">SKP</th>
                       <th className="p-2 border-b border-slate-200 dark:border-game-700 text-center">Cản</th>
-                      <th className="p-2 border-b border-slate-200 dark:border-game-700 text-center">Điểm</th>
                       <th className="p-2 border-b border-slate-200 dark:border-game-700 text-center">Trận</th>
                       <th className="p-2 border-b border-slate-200 dark:border-game-700 text-center text-pitch-600 dark:text-neon-cyan">Tổng</th>
                     </tr>
@@ -239,8 +297,8 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
                           </td>
                           <td className={`p-2 text-center font-mono font-medium ${isTop1 ? 'text-yellow-800 dark:text-yellow-200' : isTop2 ? 'text-slate-800 dark:text-slate-200' : isTop3 ? 'text-amber-900 dark:text-amber-200' : 'dark:text-slate-300'}`}>{row.goals}</td>
                           <td className={`p-2 text-center font-mono font-medium ${isTop1 ? 'text-yellow-800 dark:text-yellow-200' : isTop2 ? 'text-slate-800 dark:text-slate-200' : isTop3 ? 'text-amber-900 dark:text-amber-200' : 'dark:text-slate-300'}`}>{row.assists}</td>
+                          <td className={`p-2 text-center font-mono font-medium ${isTop1 ? 'text-yellow-800 dark:text-yellow-200' : isTop2 ? 'text-slate-800 dark:text-slate-200' : isTop3 ? 'text-amber-900 dark:text-amber-200' : 'dark:text-slate-300'}`}>{row.skp}</td>
                           <td className={`p-2 text-center font-mono font-medium ${isTop1 ? 'text-yellow-800 dark:text-yellow-200' : isTop2 ? 'text-slate-800 dark:text-slate-200' : isTop3 ? 'text-amber-900 dark:text-amber-200' : 'dark:text-slate-300'}`}>{row.saves}</td>
-                          <td className={`p-2 text-center font-mono font-medium ${isTop1 ? 'text-yellow-700 dark:text-yellow-500' : isTop2 ? 'text-slate-600 dark:text-slate-400' : isTop3 ? 'text-amber-700 dark:text-amber-500' : 'text-slate-500 dark:text-slate-400'}`}>{row.points.toLocaleString('vi-VN')}</td>
                           <td className={`p-2 text-center font-mono font-medium ${isTop1 ? 'text-yellow-800 dark:text-yellow-200' : isTop2 ? 'text-slate-800 dark:text-slate-200' : isTop3 ? 'text-amber-900 dark:text-amber-200' : 'dark:text-slate-300'}`}>{row.attendance}</td>
                           <td className={`p-2 text-center font-mono font-bold text-sm ${isTop1 ? 'text-yellow-600 dark:text-yellow-400 drop-shadow-sm' : isTop2 ? 'text-slate-600 dark:text-slate-300 drop-shadow-sm' : isTop3 ? 'text-amber-600 dark:text-amber-500 drop-shadow-sm' : 'text-pitch-600 dark:text-neon-cyan'}`}>{row.totalPoints.toLocaleString('vi-VN')}</td>
                         </tr>
@@ -253,6 +311,11 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* HIDDEN EXPORT VIEW */}
+      <div className="absolute top-0 left-0 -z-50 pointer-events-none" style={{ opacity: 0.001 }} aria-hidden="true">
+        <ExportSnapshot ref={exportRef} stats={stats as any} />
+      </div>
     </div>
   );
 }
@@ -265,6 +328,126 @@ function Badge({ label, value, color }: { label: string, value: string, color: s
     </div>
   );
 }
+
+const ExportSnapshot = forwardRef<HTMLDivElement, { stats: any[] }>(({ stats }, ref) => {
+  return (
+    <div ref={ref} className="w-[1240px] bg-slate-50 dark:bg-[#0f172a] text-slate-800 dark:text-white p-12 flex flex-col gap-8 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-pitch-300/20 dark:bg-[#00F0FF]/15 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"></div>
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-300/20 dark:bg-pitch-500/10 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/3"></div>
+      
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-6 relative z-10">
+        <div className="flex items-center gap-6">
+          <img src="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/sagenfc/pictures/logo-sagenfc.png" alt="Logo" className="w-20 h-20 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)] dark:drop-shadow-[0_0_15px_rgba(0,240,255,0.4)]" crossOrigin="anonymous" />
+          <div>
+            <h1 className="text-5xl font-display font-black uppercase tracking-wider text-slate-800 dark:text-white">
+              Bảng Xếp Hạng <span className="text-pitch-600 dark:text-[#00F0FF] drop-shadow-sm dark:drop-shadow-[0_0_10px_rgba(0,240,255,0.6)]">SAGEN FC</span>
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-3 font-bold tracking-widest uppercase text-base flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Cập nhật đến ngày: {new Date().toLocaleDateString('vi-VN')}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="relative z-10 w-full overflow-hidden bg-white/80 dark:bg-[#1e293b]/60 rounded-3xl border border-slate-200 dark:border-white/10 shadow-xl dark:shadow-2xl backdrop-blur-sm">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-100/80 dark:bg-[#0f172a]/80 text-slate-500 dark:text-slate-400 text-sm font-display font-bold uppercase tracking-wider backdrop-blur-md">
+              <th className="p-5 border-b border-slate-200 dark:border-white/5 text-center w-20">#</th>
+              <th className="p-5 border-b border-slate-200 dark:border-white/5">Tuyển thủ</th>
+              <th className="p-5 border-b border-slate-200 dark:border-white/5 text-center">Bàn thắng</th>
+              <th className="p-5 border-b border-slate-200 dark:border-white/5 text-center">Kiến tạo</th>
+              <th className="p-5 border-b border-slate-200 dark:border-white/5 text-center text-emerald-600 dark:text-emerald-400">SKP</th>
+              <th className="p-5 border-b border-slate-200 dark:border-white/5 text-center">Cản phá</th>
+              <th className="p-5 border-b border-slate-200 dark:border-white/5 text-center">Trận</th>
+              <th className="p-5 border-b border-slate-200 dark:border-white/5 text-center text-pitch-600 dark:text-[#00F0FF]">Tổng điểm</th>
+            </tr>
+          </thead>
+          <tbody className="text-lg divide-y divide-slate-100 dark:divide-white/5">
+            {stats.map((row, index) => {
+              const rank = index + 1;
+              const isTop1 = rank === 1;
+              const isTop2 = rank === 2;
+              const isTop3 = rank === 3;
+
+              let rowClass = "";
+              let borderClass = "border-l-4 border-transparent";
+              
+              if (isTop1) {
+                rowClass = "bg-gradient-to-r from-yellow-100/80 via-yellow-50/40 dark:from-yellow-500/30 dark:via-yellow-400/10 to-transparent";
+                borderClass = "border-l-4 border-yellow-400";
+              } else if (isTop2) {
+                rowClass = "bg-gradient-to-r from-slate-200/80 via-slate-100/40 dark:from-slate-400/30 dark:via-slate-300/10 to-transparent";
+                borderClass = "border-l-4 border-slate-400";
+              } else if (isTop3) {
+                rowClass = "bg-gradient-to-r from-amber-100/80 via-amber-50/40 dark:from-amber-600/30 dark:via-amber-500/10 to-transparent";
+                borderClass = "border-l-4 border-amber-500";
+              } else {
+                rowClass = index % 2 === 0 ? "bg-slate-50/80 dark:bg-[#1e293b]/40" : "bg-transparent";
+              }
+
+              return (
+                <tr key={row.id} className={rowClass}>
+                  <td className={`p-4 text-center font-display font-bold ${borderClass}`}>
+                    {isTop1 ? (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 text-yellow-950 flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(250,204,21,0.6)] text-xl">1</div>
+                    ) : isTop2 ? (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800 flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(148,163,184,0.6)] text-xl">2</div>
+                    ) : isTop3 ? (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 text-amber-950 flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(217,119,6,0.6)] text-xl">3</div>
+                    ) : (
+                      <span className="text-slate-400 dark:text-slate-500 text-xl">{rank}</span>
+                    )}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-4">
+                      {row.avatar_url ? (
+                        <img src={row.avatar_url} crossOrigin="anonymous" alt={row.name} className={`w-14 h-14 rounded-full object-cover shrink-0 ${isTop1 ? 'border-2 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.6)]' : isTop2 ? 'border-2 border-slate-400 shadow-[0_0_15px_rgba(148,163,184,0.6)]' : isTop3 ? 'border-2 border-amber-500 shadow-[0_0_15px_rgba(217,119,6,0.6)]' : 'border border-slate-300 dark:border-slate-600'}`} />
+                      ) : (
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${isTop1 ? 'bg-yellow-100 dark:bg-yellow-900/50 border-2 border-yellow-400' : isTop2 ? 'bg-slate-200 dark:bg-slate-800 border-2 border-slate-400' : isTop3 ? 'bg-amber-100 dark:bg-amber-900/50 border-2 border-amber-500' : 'bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700'}`}>
+                          <Users size={24} className={isTop1 ? 'text-yellow-600 dark:text-yellow-400' : isTop2 ? 'text-slate-500 dark:text-slate-400' : isTop3 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'} />
+                        </div>
+                      )}
+                      <div>
+                        <div className={`font-bold text-2xl ${isTop1 ? 'text-yellow-600 dark:text-yellow-400' : isTop2 ? 'text-slate-700 dark:text-slate-200' : isTop3 ? 'text-amber-700 dark:text-amber-400' : 'text-slate-800 dark:text-white'}`}>{row.name}</div>
+                        <div className={`text-sm mt-1 uppercase tracking-wider font-bold ${isTop1 ? 'text-yellow-600/70 dark:text-yellow-400/70' : isTop2 ? 'text-slate-500 dark:text-slate-400' : isTop3 ? 'text-amber-600/70 dark:text-amber-500/70' : 'text-slate-500'}`}>{row.position}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className={`p-4 text-center font-mono font-medium text-xl ${isTop1 ? 'text-yellow-700 dark:text-yellow-200' : isTop2 ? 'text-slate-700 dark:text-slate-200' : isTop3 ? 'text-amber-700 dark:text-amber-200' : 'text-slate-600 dark:text-slate-300'}`}>{row.goals}</td>
+                  <td className={`p-4 text-center font-mono font-medium text-xl ${isTop1 ? 'text-yellow-700 dark:text-yellow-200' : isTop2 ? 'text-slate-700 dark:text-slate-200' : isTop3 ? 'text-amber-700 dark:text-amber-200' : 'text-slate-600 dark:text-slate-300'}`}>{row.assists}</td>
+                  <td className={`p-4 text-center font-mono font-medium text-xl text-emerald-600 dark:text-emerald-300`}>{row.skp}</td>
+                  <td className={`p-4 text-center font-mono font-medium text-xl ${isTop1 ? 'text-yellow-700 dark:text-yellow-200' : isTop2 ? 'text-slate-700 dark:text-slate-200' : isTop3 ? 'text-amber-700 dark:text-amber-200' : 'text-slate-600 dark:text-slate-300'}`}>{row.saves}</td>
+                  <td className={`p-4 text-center font-mono font-medium text-xl ${isTop1 ? 'text-yellow-700/80 dark:text-yellow-200/80' : isTop2 ? 'text-slate-500 dark:text-slate-400' : isTop3 ? 'text-amber-700/80 dark:text-amber-200/80' : 'text-slate-500 dark:text-slate-400'}`}>{row.attendance}</td>
+                  <td className={`p-4 text-center font-mono font-black text-3xl ${isTop1 ? 'text-yellow-600 dark:text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)] dark:drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : isTop2 ? 'text-slate-600 dark:text-slate-200 drop-shadow-[0_0_8px_rgba(148,163,184,0.4)] dark:drop-shadow-[0_0_8px_rgba(148,163,184,0.8)]' : isTop3 ? 'text-amber-600 dark:text-amber-500 drop-shadow-[0_0_8px_rgba(217,119,6,0.4)] dark:drop-shadow-[0_0_8px_rgba(217,119,6,0.8)]' : 'text-pitch-600 dark:text-[#00F0FF]'}`}>{row.totalPoints.toLocaleString('vi-VN')}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Footer Info */}
+      <div className="flex flex-wrap items-center justify-center gap-6 mt-4 pb-4">
+        <div className="flex items-center gap-2 bg-white/80 dark:bg-[#1e293b]/80 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 backdrop-blur-sm">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Bàn thắng</span>
+          <span className="text-sm font-black text-pitch-600 dark:text-[#00F0FF]">2đ</span>
+        </div>
+        <div className="flex items-center gap-2 bg-white/80 dark:bg-[#1e293b]/80 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 backdrop-blur-sm">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kiến tạo / SKP</span>
+          <span className="text-sm font-black text-pitch-600 dark:text-[#00F0FF]">1.5đ</span>
+        </div>
+        <div className="flex items-center gap-2 bg-white/80 dark:bg-[#1e293b]/80 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 backdrop-blur-sm">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cản phá / Chuyên cần</span>
+          <span className="text-sm font-black text-pitch-600 dark:text-[#00F0FF]">1đ</span>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 function GamingMedal({ rank, avatarUrl }: { rank: 1 | 2 | 3, avatarUrl?: string }) {
   const isFirst = rank === 1;
@@ -408,16 +591,20 @@ function TopPlayerCard({ player, rank, maxNameLength = 10, className = '' }: { p
           {player.totalPoints.toLocaleString('vi-VN')} <span className="text-[10px] sm:text-xl opacity-70">PTS</span>
         </div>
 
-        <div className="w-full grid grid-cols-3 gap-1 sm:gap-2 bg-slate-50/50 dark:bg-game-950/50 rounded-xl p-2 sm:p-3 border border-slate-200/50 dark:border-game-800/50">
+        <div className="w-full grid grid-cols-4 gap-1 sm:gap-2 bg-slate-50/50 dark:bg-game-950/50 rounded-xl p-2 sm:p-3 border border-slate-200/50 dark:border-game-800/50">
           <div className="flex flex-col items-center">
             <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bàn</span>
             <span className="text-xs sm:text-lg font-mono font-black text-slate-700 dark:text-slate-200">{player.goals}</span>
           </div>
-          <div className="flex flex-col items-center border-x border-slate-200/50 dark:border-game-800/50">
+          <div className="flex flex-col items-center border-l border-slate-200/50 dark:border-game-800/50">
             <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kiến</span>
             <span className="text-xs sm:text-lg font-mono font-black text-slate-700 dark:text-slate-200">{player.assists}</span>
           </div>
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center border-l border-slate-200/50 dark:border-game-800/50">
+            <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">SKP</span>
+            <span className="text-xs sm:text-lg font-mono font-black text-slate-700 dark:text-slate-200">{player.skp || 0}</span>
+          </div>
+          <div className="flex flex-col items-center border-l border-slate-200/50 dark:border-game-800/50">
             <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cản</span>
             <span className="text-xs sm:text-lg font-mono font-black text-slate-700 dark:text-slate-200">{player.saves}</span>
           </div>

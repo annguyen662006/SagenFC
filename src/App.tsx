@@ -8,11 +8,12 @@ import { useAppStore } from './store';
 import { Leaderboard } from './components/Leaderboard';
 import { DataEntry } from './components/DataEntry';
 import { Players } from './components/Players';
+import { Matches } from './components/Matches';
 import { Menu, Moon, Sun, Monitor } from 'lucide-react';
 import { useTheme } from './components/ThemeProvider';
 import { motion, AnimatePresence } from 'motion/react';
 
-type Tab = 'leaderboard' | 'entry' | 'players';
+type Tab = 'leaderboard' | 'matches' | 'entry' | 'players';
 
 const IconLeaderboard = ({ size = 24, className = "" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -134,7 +135,8 @@ export default function App() {
             <nav className="flex flex-col gap-3">
               {[
                 { id: 'leaderboard', icon: IconLeaderboard, label: 'Bảng Xếp Hạng' },
-                { id: 'entry', icon: IconMatch, label: 'Nhập Dữ Liệu' },
+                { id: 'matches', icon: IconMatch, label: 'Trận Đấu' },
+                { id: 'entry', icon: IconMatch, label: 'Nhập Liệu' },
                 { id: 'players', icon: IconPlayers, label: 'Tuyển Thủ' }
               ].map((item) => {
                 const isActive = activeTab === item.id;
@@ -184,6 +186,7 @@ export default function App() {
           <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-game-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-game-800 flex justify-around p-2 z-50 pb-[env(safe-area-inset-bottom)]">
             {[
               { id: 'leaderboard', icon: IconLeaderboard, label: 'Xếp Hạng' },
+              { id: 'matches', icon: IconMatch, label: 'Trận Đấu' },
               { id: 'entry', icon: IconMatch, label: 'Nhập Liệu' },
               { id: 'players', icon: IconPlayers, label: 'Tuyển Thủ' }
             ].map((item) => {
@@ -225,6 +228,7 @@ export default function App() {
                 transition={{ duration: 0.2 }}
               >
                 {activeTab === 'leaderboard' && <Leaderboard players={players} matches={matches} />}
+                {activeTab === 'matches' && <Matches matches={matches} />}
                 {activeTab === 'entry' && <DataEntry players={players} matches={matches} onSave={addMatch} onUpdate={updateMatch} onDelete={deleteMatch} />}
                 {activeTab === 'players' && <Players players={players} onAddPlayer={addPlayer} onUpdatePlayer={updatePlayer} onDeletePlayer={deletePlayer} />}
               </motion.div>
