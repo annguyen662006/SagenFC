@@ -29,9 +29,17 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
         exportRef.current.classList.remove('dark');
       }
 
+      // Safari/iOS workaround: Do a test pass to force the browser to load all external
+      // images and resources into the cache or resolve any lazy-loading deferrals.
+      // We ignore errors on this first pass.
+      await toPng(exportRef.current, { pixelRatio: 1, skipFonts: true }).catch(() => {});
+      
+      // Wait a moment for network requests to finish
+      await new Promise(res => setTimeout(res, 500));
+
       const dataUrl = await toPng(exportRef.current, {
-        cacheBust: true,
         pixelRatio: 2,
+        // Removed `cacheBust: true` because it breaks Safari CORS when connecting to some CDNs
       });
       const link = document.createElement('a');
       link.download = `SagenFC_BXH_${new Date().toISOString().split('T')[0]}.png`;
@@ -161,7 +169,7 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
                       <td className="p-1.5 md:p-4">
                         <div className="flex items-center gap-2 md:gap-3">
                           {row.avatar_url ? (
-                            <img src={row.avatar_url} alt={row.name} className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover shrink-0 border border-slate-200 dark:border-game-700" referrerPolicy="no-referrer" />
+                            <img src={row.avatar_url} alt={row.name} crossOrigin="anonymous" className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover shrink-0 border border-slate-200 dark:border-game-700" referrerPolicy="no-referrer" />
                           ) : (
                             <div className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-200 dark:bg-game-800 border border-slate-300 dark:border-game-700">
                               <Users size={14} className="text-slate-400" />
@@ -283,7 +291,7 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
                           <td className="p-2">
                             <div className="flex items-center gap-2">
                               {row.avatar_url ? (
-                                <img src={row.avatar_url} alt={row.name} className={`w-8 h-8 rounded-full object-cover shrink-0 ${isTop1 ? 'border-2 border-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]' : isTop2 ? 'border-2 border-slate-300 shadow-[0_0_8px_rgba(148,163,184,0.6)]' : isTop3 ? 'border-2 border-amber-500 shadow-[0_0_8px_rgba(217,119,6,0.6)]' : 'border border-slate-200 dark:border-game-700'}`} referrerPolicy="no-referrer" />
+                                <img src={row.avatar_url} alt={row.name} crossOrigin="anonymous" className={`w-8 h-8 rounded-full object-cover shrink-0 ${isTop1 ? 'border-2 border-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]' : isTop2 ? 'border-2 border-slate-300 shadow-[0_0_8px_rgba(148,163,184,0.6)]' : isTop3 ? 'border-2 border-amber-500 shadow-[0_0_8px_rgba(217,119,6,0.6)]' : 'border border-slate-200 dark:border-game-700'}`} referrerPolicy="no-referrer" />
                               ) : (
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isTop1 ? 'bg-yellow-100 dark:bg-yellow-900/50 border-2 border-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]' : isTop2 ? 'bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 shadow-[0_0_8px_rgba(148,163,184,0.6)]' : isTop3 ? 'bg-amber-100 dark:bg-amber-900/50 border-2 border-amber-500 shadow-[0_0_8px_rgba(217,119,6,0.6)]' : 'bg-slate-200 dark:bg-game-800 border border-slate-300 dark:border-game-700'}`}>
                                   <Users size={14} className={isTop1 ? 'text-yellow-600 dark:text-yellow-400' : isTop2 ? 'text-slate-500 dark:text-slate-400' : isTop3 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'} />
@@ -313,7 +321,7 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
       </AnimatePresence>
 
       {/* HIDDEN EXPORT VIEW */}
-      <div className="absolute top-0 left-0 -z-50 pointer-events-none" style={{ opacity: 0.001 }} aria-hidden="true">
+      <div className="fixed top-[-20000px] left-[-20000px] pointer-events-none" aria-hidden="true">
         <ExportSnapshot ref={exportRef} stats={stats as any} />
       </div>
     </div>
@@ -520,7 +528,7 @@ function GamingMedal({ rank, avatarUrl }: { rank: 1 | 2 | 3, avatarUrl?: string 
         >
           {avatarUrl ? (
             <>
-              <img src={avatarUrl} alt="Avatar" className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <img src={avatarUrl} alt="Avatar" crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
               <Star 
                 className={`absolute bottom-2 sm:bottom-3 z-10 ${isFirst ? 'w-6 h-6 sm:w-8 sm:h-8 text-yellow-400' : (rank === 2 ? 'w-5 h-5 sm:w-7 sm:h-7 text-slate-300' : 'w-5 h-5 sm:w-6 sm:h-6 text-amber-500')} drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]`} 

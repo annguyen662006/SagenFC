@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Player, MatchRecord, PlayerMatchStat } from '../types';
 import { Plus, Minus, Save, Trash2, Edit2, X, Check, UserPlus, AlertTriangle, Calendar, Activity, Users, Upload } from 'lucide-react';
 import { format } from 'date-fns';
@@ -285,17 +285,27 @@ export function DataEntry({ players, matches, onSave, onUpdate, onDelete }: Data
       {/* List of Saved Matches */}
       {editMode === 'none' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {matches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((match, idx) => (
+          {matches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((match, idx) => {
+            const themes = [
+              { border: 'border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-400 shadow-blue-500/5', badge: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
+              { border: 'border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-400 shadow-purple-500/5', badge: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
+              { border: 'border-rose-200 dark:border-rose-800 hover:border-rose-400 dark:hover:border-rose-400 shadow-rose-500/5', badge: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400' },
+              { border: 'border-amber-200 dark:border-amber-800 hover:border-amber-400 dark:hover:border-amber-400 shadow-amber-500/5', badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+              { border: 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-400 dark:hover:border-emerald-400 shadow-emerald-500/5', badge: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' },
+              { border: 'border-cyan-200 dark:border-cyan-800 hover:border-cyan-400 dark:hover:border-cyan-400 shadow-cyan-500/5', badge: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400' },
+            ];
+            const theme = themes[idx % themes.length];
+            return (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
               key={match.id} 
-              className="bg-white dark:bg-game-900 rounded-2xl shadow-sm border border-slate-200 dark:border-game-800 overflow-hidden group hover:border-pitch-500/50 dark:hover:border-neon-cyan/50 transition-colors"
+              className={`bg-white dark:bg-game-900 rounded-2xl shadow-sm border-2 overflow-hidden group transition-colors ${theme.border}`}
             >
-              <div className="p-5 flex justify-between items-center border-b border-slate-100 dark:border-game-800 bg-slate-50 dark:bg-game-800/30">
+              <div className="p-5 flex justify-between items-center border-b border-slate-100 dark:border-game-800/50 bg-slate-50 dark:bg-game-800/20">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-pitch-100 dark:bg-neon-cyan/10 text-pitch-600 dark:text-neon-cyan flex items-center justify-center font-display font-black text-xl">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-display font-black text-xl ${theme.badge}`}>
                     {format(new Date(match.date), 'dd')}
                   </div>
                   <div>
@@ -329,7 +339,8 @@ export function DataEntry({ players, matches, onSave, onUpdate, onDelete }: Data
                 <StatSummary label="Cản phá" value={match.stats.reduce((sum, s) => sum + s.saves, 0)} players={match.stats.filter(s => s.saves > 0).map(s => getPlayerName(s.playerId))} />
               </div>
             </motion.div>
-          ))}
+            );
+          })}
           {matches.length === 0 && (
             <div className="col-span-full text-center py-16 text-slate-500 dark:text-slate-400 bg-white dark:bg-game-900 rounded-3xl border-2 border-dashed border-slate-200 dark:border-game-800">
               <Activity size={48} className="mx-auto mb-4 opacity-20" />

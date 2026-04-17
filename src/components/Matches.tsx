@@ -28,11 +28,21 @@ export function Matches({ matches }: MatchesProps) {
 
       <div className="grid gap-6">
         {sortedMatches.map((match, idx) => {
+          const themes = [
+            'border-blue-200 dark:border-blue-800 shadow-blue-500/5',
+            'border-purple-200 dark:border-purple-800 shadow-purple-500/5',
+            'border-rose-200 dark:border-rose-800 shadow-rose-500/5',
+            'border-amber-200 dark:border-amber-800 shadow-amber-500/5',
+            'border-emerald-200 dark:border-emerald-800 shadow-emerald-500/5',
+            'border-cyan-200 dark:border-cyan-800 shadow-cyan-500/5',
+          ];
+          const themeClass = themes[idx % themes.length];
+
           const isWin = (match.home_score ?? 0) > (match.away_score ?? 0);
           const isDraw = (match.home_score ?? 0) === (match.away_score ?? 0);
           const isLoss = (match.home_score ?? 0) < (match.away_score ?? 0);
 
-          let resultBg = 'bg-slate-100 dark:bg-game-800 text-slate-600 dark:text-slate-300';
+          let resultBg = 'bg-slate-100 dark:bg-game-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-game-700';
           if (match.home_score !== undefined && match.away_score !== undefined) {
              if (isWin) resultBg = 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800';
              if (isDraw) resultBg = 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800';
@@ -45,7 +55,7 @@ export function Matches({ matches }: MatchesProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
               key={match.id} 
-              className="bg-white dark:bg-game-900 rounded-2xl shadow-lg border border-slate-200 dark:border-game-800 overflow-hidden relative group"
+              className={`bg-white dark:bg-game-900 rounded-3xl shadow-lg border-2 overflow-hidden relative group ${themeClass}`}
             >
               {/* Match Header with Date */}
               <div className="bg-slate-50 dark:bg-game-950 p-4 border-b border-slate-100 dark:border-game-800 flex justify-center items-center">
