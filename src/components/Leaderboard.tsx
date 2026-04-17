@@ -322,7 +322,9 @@ export function Leaderboard({ players, matches }: LeaderboardProps) {
 
       {/* HIDDEN EXPORT VIEW */}
       <div className="fixed top-[-20000px] left-[-20000px] pointer-events-none" aria-hidden="true">
-        <ExportSnapshot ref={exportRef} stats={stats as any} />
+        <div ref={exportRef} className={document.documentElement.classList.contains('dark') ? 'dark' : ''}>
+          <ExportSnapshot stats={stats as any} />
+        </div>
       </div>
     </div>
   );
@@ -337,12 +339,18 @@ function Badge({ label, value, color }: { label: string, value: string, color: s
   );
 }
 
-const ExportSnapshot = forwardRef<HTMLDivElement, { stats: any[] }>(({ stats }, ref) => {
+const ExportSnapshot = ({ stats }: { stats: any[] }) => {
   return (
-    <div ref={ref} className="w-[1240px] bg-slate-50 dark:bg-[#0f172a] text-slate-800 dark:text-white p-12 flex flex-col gap-8 relative overflow-hidden">
+    <div className="w-[1240px] bg-slate-50 dark:bg-[#0f172a] text-slate-800 dark:text-white p-12 flex flex-col gap-8 relative overflow-hidden">
       {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-pitch-300/20 dark:bg-[#00F0FF]/15 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"></div>
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-300/20 dark:bg-pitch-500/10 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/3"></div>
+      <div 
+        className="absolute top-0 right-0 w-[800px] h-[800px] -translate-y-1/2 translate-x-1/3 pointer-events-none" 
+        style={{ background: 'radial-gradient(circle, rgba(0, 240, 255, 0.1) 0%, transparent 70%)' }}>
+      </div>
+      <div 
+        className="absolute bottom-0 left-0 w-[800px] h-[800px] translate-y-1/3 -translate-x-1/3 pointer-events-none" 
+        style={{ background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%)' }}>
+      </div>
       
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-6 relative z-10">
@@ -360,10 +368,10 @@ const ExportSnapshot = forwardRef<HTMLDivElement, { stats: any[] }>(({ stats }, 
       </div>
 
       {/* Table */}
-      <div className="relative z-10 w-full overflow-hidden bg-white/80 dark:bg-[#1e293b]/60 rounded-3xl border border-slate-200 dark:border-white/10 shadow-xl dark:shadow-2xl backdrop-blur-sm">
+      <div className="relative z-10 w-full overflow-hidden bg-white/95 dark:bg-[#1e293b]/95 rounded-3xl border border-slate-200 dark:border-white/10 shadow-xl dark:shadow-2xl">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-100/80 dark:bg-[#0f172a]/80 text-slate-500 dark:text-slate-400 text-sm font-display font-bold uppercase tracking-wider backdrop-blur-md">
+            <tr className="bg-slate-100 dark:bg-[#0f172a] text-slate-500 dark:text-slate-400 text-sm font-display font-bold uppercase tracking-wider">
               <th className="p-5 border-b border-slate-200 dark:border-white/5 text-center w-20">#</th>
               <th className="p-5 border-b border-slate-200 dark:border-white/5">Tuyển thủ</th>
               <th className="p-5 border-b border-slate-200 dark:border-white/5 text-center">Bàn thắng</th>
@@ -468,7 +476,7 @@ const ExportSnapshot = forwardRef<HTMLDivElement, { stats: any[] }>(({ stats }, 
       </div>
     </div>
   );
-});
+};
 
 function GamingMedal({ rank, avatarUrl }: { rank: 1 | 2 | 3, avatarUrl?: string }) {
   const isFirst = rank === 1;
