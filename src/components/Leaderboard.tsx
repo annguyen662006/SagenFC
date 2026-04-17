@@ -347,10 +347,10 @@ const ExportSnapshot = forwardRef<HTMLDivElement, { stats: any[] }>(({ stats }, 
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-6 relative z-10">
         <div className="flex items-center gap-6">
-          <img src="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/sagenfc/pictures/logo-sagenfc.png" alt="Logo" className="w-20 h-20 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)] dark:drop-shadow-[0_0_15px_rgba(0,240,255,0.4)]" crossOrigin="anonymous" />
+          <img src="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/sagenfc/pictures/logo-sagenfc.png" alt="Logo" className="w-20 h-20" style={{ filter: 'drop-shadow(0 0 10px rgba(0,240,255,0.3))' }} crossOrigin="anonymous" />
           <div>
             <h1 className="text-5xl font-display font-black uppercase tracking-wider text-slate-800 dark:text-white">
-              Bảng Xếp Hạng <span className="text-pitch-600 dark:text-[#00F0FF] drop-shadow-sm dark:drop-shadow-[0_0_10px_rgba(0,240,255,0.6)]">SAGEN FC</span>
+              Bảng Xếp Hạng <span className="text-pitch-600 dark:text-[#00F0FF]" style={{ textShadow: '0 0 10px rgba(0,240,255,0.4)' }}>SAGEN FC</span>
             </h1>
             <p className="text-slate-500 dark:text-slate-400 mt-3 font-bold tracking-widest uppercase text-base flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Cập nhật đến ngày: {new Date().toLocaleDateString('vi-VN')}
@@ -401,11 +401,11 @@ const ExportSnapshot = forwardRef<HTMLDivElement, { stats: any[] }>(({ stats }, 
                 <tr key={row.id} className={rowClass}>
                   <td className={`p-4 text-center font-display font-bold ${borderClass}`}>
                     {isTop1 ? (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 text-yellow-950 flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(250,204,21,0.6)] text-xl">1</div>
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 text-yellow-950 flex items-center justify-center mx-auto text-xl" style={{ boxShadow: '0 0 0 4px rgba(250,204,21,0.2)' }}>1</div>
                     ) : isTop2 ? (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800 flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(148,163,184,0.6)] text-xl">2</div>
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800 flex items-center justify-center mx-auto text-xl" style={{ boxShadow: '0 0 0 4px rgba(148,163,184,0.2)' }}>2</div>
                     ) : isTop3 ? (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 text-amber-950 flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(217,119,6,0.6)] text-xl">3</div>
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 text-amber-950 flex items-center justify-center mx-auto text-xl" style={{ boxShadow: '0 0 0 4px rgba(217,119,6,0.2)' }}>3</div>
                     ) : (
                       <span className="text-slate-400 dark:text-slate-500 text-xl">{rank}</span>
                     )}
@@ -413,10 +413,18 @@ const ExportSnapshot = forwardRef<HTMLDivElement, { stats: any[] }>(({ stats }, 
                   <td className="p-4">
                     <div className="flex items-center gap-4">
                       {row.avatar_url ? (
-                        <img src={row.avatar_url} crossOrigin="anonymous" alt={row.name} className={`w-14 h-14 rounded-full object-cover shrink-0 ${isTop1 ? 'border-2 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.6)]' : isTop2 ? 'border-2 border-slate-400 shadow-[0_0_15px_rgba(148,163,184,0.6)]' : isTop3 ? 'border-2 border-amber-500 shadow-[0_0_15px_rgba(217,119,6,0.6)]' : 'border border-slate-300 dark:border-slate-600'}`} />
+                        <div className="relative w-14 h-14 shrink-0">
+                          <img src={row.avatar_url} crossOrigin="anonymous" alt={row.name} className={`relative z-10 w-14 h-14 rounded-full object-cover border-2 flex-shrink-0 ${isTop1 ? 'border-yellow-400' : isTop2 ? 'border-slate-400' : isTop3 ? 'border-amber-500' : 'border-slate-300 dark:border-slate-600'}`} />
+                          {isTop1 && <div className="absolute -inset-1 rounded-full border-2 border-yellow-400/30"></div>}
+                          {isTop2 && <div className="absolute -inset-1 rounded-full border-2 border-slate-400/30"></div>}
+                          {isTop3 && <div className="absolute -inset-1 rounded-full border-2 border-amber-500/30"></div>}
+                        </div>
                       ) : (
-                        <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${isTop1 ? 'bg-yellow-100 dark:bg-yellow-900/50 border-2 border-yellow-400' : isTop2 ? 'bg-slate-200 dark:bg-slate-800 border-2 border-slate-400' : isTop3 ? 'bg-amber-100 dark:bg-amber-900/50 border-2 border-amber-500' : 'bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700'}`}>
-                          <Users size={24} className={isTop1 ? 'text-yellow-600 dark:text-yellow-400' : isTop2 ? 'text-slate-500 dark:text-slate-400' : isTop3 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'} />
+                        <div className={`relative w-14 h-14 rounded-full flex items-center justify-center shrink-0 border-2 ${isTop1 ? 'bg-yellow-100 dark:bg-yellow-900/50 border-yellow-400' : isTop2 ? 'bg-slate-200 dark:bg-slate-800 border-slate-400' : isTop3 ? 'bg-amber-100 dark:bg-amber-900/50 border-amber-500' : 'bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700'}`}>
+                          <Users size={24} className={isTop1 ? 'relative z-10 text-yellow-600 dark:text-yellow-400' : isTop2 ? 'relative z-10 text-slate-500 dark:text-slate-400' : isTop3 ? 'relative z-10 text-amber-600 dark:text-amber-400' : 'relative z-10 text-slate-400 dark:text-slate-500'} />
+                          {isTop1 && <div className="absolute -inset-1 rounded-full border-2 border-yellow-400/30"></div>}
+                          {isTop2 && <div className="absolute -inset-1 rounded-full border-2 border-slate-400/30"></div>}
+                          {isTop3 && <div className="absolute -inset-1 rounded-full border-2 border-amber-500/30"></div>}
                         </div>
                       )}
                       <div>
@@ -430,7 +438,12 @@ const ExportSnapshot = forwardRef<HTMLDivElement, { stats: any[] }>(({ stats }, 
                   <td className={`p-4 text-center font-mono font-medium text-xl text-emerald-600 dark:text-emerald-300`}>{row.skp}</td>
                   <td className={`p-4 text-center font-mono font-medium text-xl ${isTop1 ? 'text-yellow-700 dark:text-yellow-200' : isTop2 ? 'text-slate-700 dark:text-slate-200' : isTop3 ? 'text-amber-700 dark:text-amber-200' : 'text-slate-600 dark:text-slate-300'}`}>{row.saves}</td>
                   <td className={`p-4 text-center font-mono font-medium text-xl ${isTop1 ? 'text-yellow-700/80 dark:text-yellow-200/80' : isTop2 ? 'text-slate-500 dark:text-slate-400' : isTop3 ? 'text-amber-700/80 dark:text-amber-200/80' : 'text-slate-500 dark:text-slate-400'}`}>{row.attendance}</td>
-                  <td className={`p-4 text-center font-mono font-black text-3xl ${isTop1 ? 'text-yellow-600 dark:text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)] dark:drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : isTop2 ? 'text-slate-600 dark:text-slate-200 drop-shadow-[0_0_8px_rgba(148,163,184,0.4)] dark:drop-shadow-[0_0_8px_rgba(148,163,184,0.8)]' : isTop3 ? 'text-amber-600 dark:text-amber-500 drop-shadow-[0_0_8px_rgba(217,119,6,0.4)] dark:drop-shadow-[0_0_8px_rgba(217,119,6,0.8)]' : 'text-pitch-600 dark:text-[#00F0FF]'}`}>{row.totalPoints.toLocaleString('vi-VN')}</td>
+                  <td 
+                    className={`p-4 text-center font-mono font-black text-3xl ${isTop1 ? 'text-yellow-600 dark:text-yellow-400' : isTop2 ? 'text-slate-600 dark:text-slate-200' : isTop3 ? 'text-amber-600 dark:text-amber-500' : 'text-pitch-600 dark:text-[#00F0FF]'}`}
+                    style={{ textShadow: isTop1 ? '0 0 8px rgba(250,204,21,0.6)' : isTop2 ? '0 0 8px rgba(148,163,184,0.6)' : isTop3 ? '0 0 8px rgba(217,119,6,0.6)' : undefined }}
+                  >
+                    {row.totalPoints.toLocaleString('vi-VN')}
+                  </td>
                 </tr>
               );
             })}
