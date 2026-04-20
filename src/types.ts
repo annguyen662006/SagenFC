@@ -24,3 +24,13 @@ export interface MatchRecord {
   away_score?: number;
   stats: PlayerMatchStat[];
 }
+
+export interface AppUser {
+  id: string;
+  username: string;
+  role: 'admin' | 'user';
+  status: 'active' | 'inactive';
+  last_login?: string;
+  total_time?: number;
+  created_at: string;
+}

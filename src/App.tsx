@@ -9,11 +9,13 @@ import { Leaderboard } from './components/Leaderboard';
 import { DataEntry } from './components/DataEntry';
 import { Players } from './components/Players';
 import { Matches } from './components/Matches';
-import { Menu, Moon, Sun, Monitor } from 'lucide-react';
+import { AdminPanel } from './components/AdminPanel';
+import { Login } from './components/Login';
+import { Menu, Moon, Sun, Monitor, LogOut } from 'lucide-react';
 import { useTheme } from './components/ThemeProvider';
 import { motion, AnimatePresence } from 'motion/react';
 
-type Tab = 'leaderboard' | 'matches' | 'entry' | 'players';
+type Tab = 'leaderboard' | 'matches' | 'entry' | 'players' | 'admin';
 
 const IconLeaderboard = ({ size = 24, className = "" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -43,9 +45,16 @@ const IconPlayers = ({ size = 24, className = "" }) => (
   </svg>
 );
 
+const IconAdmin = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    <path d="m9 12 2 2 4-4"/>
+  </svg>
+);
+
 export default function App() {
   const { 
-    players, matches, loading,
+    players, matches, loading, currentUser, logout, login,
     addPlayer, updatePlayer, deletePlayer, 
     addMatch, updateMatch, deleteMatch
   } = useAppStore();
@@ -86,6 +95,39 @@ export default function App() {
     );
   }
 
+  const navItems = [
+    { id: 'leaderboard', icon: IconLeaderboard, label: 'Bảng Xếp Hạng' },
+    { id: 'matches', icon: IconMatch, label: 'Trận Đấu' },
+    { id: 'entry', icon: IconMatch, label: 'Nhập Liệu', secure: true },
+    { id: 'players', icon: IconPlayers, label: 'Tuyển Thủ', secure: true },
+  ];
+  
+  if (currentUser?.role === 'admin') {
+    navItems.push({ id: 'admin', icon: IconAdmin, label: 'Admin', secure: true });
+  }
+
+  const renderContent = () => {
+    // If trying to access admin without being admin, fallback to leaderboard
+    if (activeTab === 'admin' && currentUser?.role !== 'admin') {
+      return <Login onLogin={login} />;
+    }
+
+    const currentTabItem = navItems.find(i => i.id === activeTab) || { secure: activeTab === 'admin' || activeTab === 'entry' || activeTab === 'players' };
+    
+    if (currentTabItem.secure && !currentUser) {
+      return <Login onLogin={login} />;
+    }
+    
+    switch (activeTab) {
+      case 'leaderboard': return <Leaderboard players={players} matches={matches} />;
+      case 'matches': return <Matches matches={matches} />;
+      case 'entry': return <DataEntry players={players} matches={matches} onSave={addMatch} onUpdate={updateMatch} onDelete={deleteMatch} />;
+      case 'players': return <Players players={players} onAddPlayer={addPlayer} onUpdatePlayer={updatePlayer} onDeletePlayer={deletePlayer} />;
+      case 'admin': return <AdminPanel />;
+      default: return <Leaderboard players={players} matches={matches} />;
+    }
+  };
+
   return (
     <div className="min-h-screen pb-20 md:pb-0">
       {/* Header */}
@@ -115,6 +157,21 @@ export default function App() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {currentUser && (
+                <div className="flex items-center gap-3 mr-2 border-r border-slate-200 dark:border-game-700 pr-4">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase hidden sm:block">Xin chào, {currentUser.username}</span>
+                  <button 
+                    onClick={() => {
+                      logout();
+                      setActiveTab('leaderboard');
+                    }}
+                    className="p-2 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                    title="Đăng xuất"
+                  >
+                    <LogOut size={18} />
+                  </button>
+                </div>
+              )}
               <button 
                 onClick={cycleTheme}
                 className="p-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-neon-cyan hover:bg-slate-100 dark:hover:bg-game-800 rounded-xl transition-all duration-300 border border-transparent dark:hover:border-neon-cyan/30 dark:hover:box-glow-cyan"
@@ -133,12 +190,7 @@ export default function App() {
           {/* Desktop Sidebar Navigation */}
           <div className={`hidden md:flex flex-col shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'} sticky top-28 h-[calc(100vh-8rem)]`}>
             <nav className="flex flex-col gap-3">
-              {[
-                { id: 'leaderboard', icon: IconLeaderboard, label: 'Bảng Xếp Hạng' },
-                { id: 'matches', icon: IconMatch, label: 'Trận Đấu' },
-                { id: 'entry', icon: IconMatch, label: 'Nhập Liệu' },
-                { id: 'players', icon: IconPlayers, label: 'Tuyển Thủ' }
-              ].map((item) => {
+              {navItems.map((item) => {
                 const isActive = activeTab === item.id;
                 const Icon = item.icon;
                 return (
@@ -184,12 +236,7 @@ export default function App() {
 
           {/* Mobile Bottom Navigation */}
           <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-game-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-game-800 flex justify-around p-2 z-50 pb-[env(safe-area-inset-bottom)]">
-            {[
-              { id: 'leaderboard', icon: IconLeaderboard, label: 'Xếp Hạng' },
-              { id: 'matches', icon: IconMatch, label: 'Trận Đấu' },
-              { id: 'entry', icon: IconMatch, label: 'Nhập Liệu' },
-              { id: 'players', icon: IconPlayers, label: 'Tuyển Thủ' }
-            ].map((item) => {
+            {navItems.map((item) => {
               const isActive = activeTab === item.id;
               const Icon = item.icon;
               return (
@@ -211,7 +258,7 @@ export default function App() {
                     />
                   )}
                   <Icon size={22} className={`relative z-10 transition-all duration-300 ${isActive ? 'text-pitch-400 dark:text-neon-cyan drop-shadow-[0_0_8px_rgba(16,185,129,0.8)] dark:drop-shadow-[0_0_8px_rgba(0,240,255,0.8)] scale-110' : 'group-hover:scale-110 group-hover:-rotate-12'}`} />
-                  <span className={`text-[10px] font-display font-bold tracking-wider uppercase relative z-10 transition-colors ${isActive ? 'text-pitch-400 dark:text-neon-cyan' : ''}`}>{item.label}</span>
+                  <span className={`text-[10px] sm:text-xs font-display font-bold tracking-wider uppercase relative z-10 transition-colors ${isActive ? 'text-pitch-400 dark:text-neon-cyan' : ''}`}>{item.id === 'leaderboard' ? 'Xếp Hạng' : item.label}</span>
                 </button>
               );
             })}
@@ -227,10 +274,7 @@ export default function App() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
               >
-                {activeTab === 'leaderboard' && <Leaderboard players={players} matches={matches} />}
-                {activeTab === 'matches' && <Matches matches={matches} />}
-                {activeTab === 'entry' && <DataEntry players={players} matches={matches} onSave={addMatch} onUpdate={updateMatch} onDelete={deleteMatch} />}
-                {activeTab === 'players' && <Players players={players} onAddPlayer={addPlayer} onUpdatePlayer={updatePlayer} onDeletePlayer={deletePlayer} />}
+                {renderContent()}
               </motion.div>
             </AnimatePresence>
             

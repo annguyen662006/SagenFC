@@ -1,11 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Player, MatchRecord } from './types';
+import { Player, MatchRecord, AppUser } from './types';
 import { supabase } from './lib/supabase';
 
 export function useAppStore() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
+    const saved = localStorage.getItem('sagenfc_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const login = (user: AppUser) => {
+    setCurrentUser(user);
+    localStorage.setItem('sagenfc_user', JSON.stringify(user));
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('sagenfc_user');
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -69,6 +83,9 @@ export function useAppStore() {
     players,
     matches,
     loading,
+    currentUser,
+    login,
+    logout,
     addPlayer,
     updatePlayer,
     deletePlayer,
